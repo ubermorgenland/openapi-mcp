@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examples - openapi-mcp</title>
+  <meta name="description" content="Practical examples for using openapi-mcp to transform OpenAPI specs into MCP tool servers.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="../docs/">Documentation</a></li>
+          <li><a href="./">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Examples Content -->
+  <div class="container py-5">
+    <h1>openapi-mcp Examples</h1>
+    
+    <p class="lead">
+      This page contains practical examples to help you get the most out of openapi-mcp.
+      From basic usage to advanced configurations, these examples will guide you through
+      various use cases.
+    </p>
+    
+    <h2 class="mt-5">Basic Usage Examples</h2>
+    
+    <div class="card mb-4">
+      <h3>1. Running openapi-mcp with a Sample OpenAPI Spec</h3>
+      <p>
+        This example shows how to run openapi-mcp with the included Fastly API example spec.
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <p>This starts an MCP server in stdio mode, exposing all operations from the Fastly API spec as MCP tools.</p>
+    </div>
+    
+    <div class="card mb-4">
+      <h3>2. Using mcp-client to Interact with the Server</h3>
+      <p>
+        Connect to the running MCP server with the interactive client:
+      </p>
+      <pre><code class="language-bash">bin/mcp-client bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <p>Example session:</p>
+      <pre><code>mcp> list
+["listServices", "createService", "getService", "updateService", "deleteService", ...]
+
+mcp> schema createService
+Schema for createService:
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string", "description": "The name of the service."},
+    "comment": {"type": "string", "description": "A freeform descriptive note."},
+    "type": {"type": "string", "enum": ["vcl", "wasm"], "description": "The type of this service."}
+  },
+  "required": ["name", "type"]
+}
+Example: call createService {"name": "My Service", "type": "vcl"}
+
+mcp> call createService {"name": "My Service", "type": "vcl"}
+HTTP POST /service
+Status: 200
+Response:
+{
+  "id": "SU1Z0isxPaozGVKXdv0eY",
+  "name": "My Service",
+  "customer_id": "x4xCwxxJxGCx123Rx5xTx",
+  "type": "vcl",
+  "created_at": "2016-08-17T19:27:28+00:00",
+  "updated_at": "2016-08-17T19:27:28+00:00"
+}</code></pre>
+    </div>
+    
+    <h2 class="mt-5">Configuration Examples</h2>
+    
+    <div class="card mb-4">
+      <h3>3. Running as an HTTP Server</h3>
+      <p>
+        Instead of stdio mode, you can run openapi-mcp as an HTTP server:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --http=:8080 examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <p>
+        This starts an HTTP server on port 8080. You can connect to it using any HTTP client or the MCP client:
+      </p>
+      <pre><code class="language-bash">bin/mcp-client http://localhost:8080</code></pre>
+    </div>
+    
+    <div class="card mb-4">
+      <h3>4. Using Authentication</h3>
+      <p>
+        Many APIs require authentication. openapi-mcp supports multiple authentication methods:
+      </p>
+      
+      <h4>API Key Authentication</h4>
+      <pre><code class="language-bash"># Using command-line flag
+bin/openapi-mcp --api-key=your_api_key examples/fastly-openapi-mcp.yaml
+
+# Using environment variable
+API_KEY=your_api_key bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <h4>Bearer Token Authentication</h4>
+      <pre><code class="language-bash"># Using command-line flag
+bin/openapi-mcp --bearer-token=your_token examples/fastly-openapi-mcp.yaml
+
+# Using environment variable
+BEARER_TOKEN=your_token bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <h4>Basic Authentication</h4>
+      <pre><code class="language-bash"># Using command-line flag
+bin/openapi-mcp --basic-auth=username:password examples/fastly-openapi-mcp.yaml
+
+# Using environment variable
+BASIC_AUTH=username:password bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+    </div>
+    
+    <h2 class="mt-5">Advanced Examples</h2>
+    
+    <div class="card mb-4">
+      <h3>5. Generating Documentation</h3>
+      <p>
+        Generate Markdown documentation for all tools:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --doc=tools.md examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <p>
+        Generate HTML documentation:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --doc=tools.html --doc-format=html examples/fastly-openapi-mcp.yaml</code></pre>
+    </div>
+    
+    <div class="card mb-4">
+      <h3>6. Filtering Operations</h3>
+      <p>
+        Filter operations by tag:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --tag=admin examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <p>
+        Filter operations by description (using regex):
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --include-desc-regex="user|account" examples/fastly-openapi-mcp.yaml
+bin/openapi-mcp --exclude-desc-regex="deprecated" examples/fastly-openapi-mcp.yaml</code></pre>
+    </div>
+    
+    <div class="card mb-4">
+      <h3>7. Using as a Library in Go Code</h3>
+      <p>
+        You can use openapi-mcp as a Go library in your own projects:
+      </p>
+      <pre><code class="language-go">package main
+
+import (
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Load OpenAPI spec
+	doc, err := openapi2mcp.LoadOpenAPISpec("openapi.yaml")
+	if err != nil {
+		panic(err)
+	}
+	
+	// Create MCP server
+	srv := openapi2mcp.NewServer("myapi", doc.Info.Version, doc)
+	
+	// Serve over HTTP
+	if err := openapi2mcp.ServeStreamableHTTP(srv, ":8080", "/mcp"); err != nil {
+		panic(err)
+	}
+}</code></pre>
+    </div>
+    
+    <h2 class="mt-5">Safety and Confirmation Examples</h2>
+    
+    <div class="card mb-4">
+      <h3>8. Handling Confirmation for Dangerous Operations</h3>
+      <p>
+        By default, openapi-mcp requires confirmation for any PUT, POST, or DELETE operation. Here's how the flow works:
+      </p>
+      
+      <p><strong>First call:</strong></p>
+      <pre><code class="language-json">// Request
+mcp> call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY"}
+
+// Response
+{
+  "type": "confirmation_request",
+  "confirmation_required": true,
+  "message": "This action is irreversible. Proceed?",
+  "action": "delete_resource"
+}</code></pre>
+      
+      <p><strong>Second call with confirmation:</strong></p>
+      <pre><code class="language-json">// Request
+mcp> call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY", "__confirmed": true}
+
+// Response
+{
+  "type": "api_response",
+  "data": {
+    "status": "ok"
+  },
+  "metadata": {
+    "status_code": 200
+  }
+}</code></pre>
+      
+      <p>
+        To disable this confirmation mechanism:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --no-confirm-dangerous examples/fastly-openapi-mcp.yaml</code></pre>
+    </div>
+    
+    <h2 class="mt-5">CI/CD and Automation Examples</h2>
+    
+    <div class="card mb-4">
+      <h3>9. Dry Run Mode</h3>
+      <p>
+        Preview the generated tool schemas without starting a server:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --dry-run examples/fastly-openapi-mcp.yaml</code></pre>
+    </div>
+    
+    <div class="card mb-4">
+      <h3>10. Summary Mode</h3>
+      <p>
+        Print a summary of the operations:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --summary --dry-run examples/fastly-openapi-mcp.yaml</code></pre>
+      
+      <p>Example output:</p>
+      <pre><code>OpenAPI spec loaded and validated successfully.
+Registered all OpenAPI operations as MCP tools.
+Total tools: 28
+Tags:
+  Service: 5
+  Version: 3
+  Domain: 3
+  Origin: 3
+  Backend: 3
+  CacheSettings: 3
+  Purge: 5
+  WAF: 3
+  Stats: 2
+  Metrics: 1</code></pre>
+    </div>
+    
+    <div class="card mb-4">
+      <h3>11. Post-Processing with External Commands</h3>
+      <p>
+        Process the generated schema JSON with an external command:
+      </p>
+      <pre><code class="language-bash">bin/openapi-mcp --doc=tools.md --post-hook-cmd='jq . | tee /tmp/filtered.json' examples/fastly-openapi-mcp.yaml</code></pre>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="../docs/">Getting Started</a></li>
+            <li><a href="../docs/installation.html">Installation</a></li>
+            <li><a href="../docs/configuration.html">Configuration</a></li>
+            <li><a href="../docs/authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="./">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

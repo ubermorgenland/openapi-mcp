@@ -1,0 +1,140 @@
+name: 🐛 Bug Report
+description: Report a problem with openapi-mcp
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the form below to help us understand and reproduce the issue.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checks
+      description: Please verify these before submitting
+      options:
+        - label: I have searched existing issues to ensure this isn't a duplicate
+          required: true
+        - label: I have checked the documentation and README
+          required: true
+        - label: I can reproduce this issue consistently
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: openapi-mcp Version
+      description: What version of openapi-mcp are you using?
+      placeholder: "v1.0.0 or commit hash"
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      description: What version of Go are you using?
+      placeholder: "go version output"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: What OS and version are you running?
+      placeholder: "macOS 14.0, Ubuntu 22.04, Windows 11, etc."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component is affected?
+      options:
+        - OpenAPI parsing/validation
+        - MCP server (stdio mode)
+        - MCP server (HTTP mode)
+        - Database integration
+        - Authentication
+        - CLI tools (spec-manager, etc.)
+        - Documentation
+        - Build/Installation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug
+      placeholder: "When I do X, Y happens instead of Z..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the issue
+      placeholder: |
+        1. Run command: `bin/openapi-mcp --http :8080 examples/weather.yaml`
+        2. Send request: `curl -X POST ...`
+        3. Observe error: `...`
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: "The server should respond with..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+      placeholder: "Instead, the server..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and Error Messages
+      description: Include relevant log output, error messages, or stack traces
+      render: shell
+      placeholder: "Paste error messages, stack traces, or relevant log output here"
+
+  - type: textarea
+    id: openapi-spec
+    attributes:
+      label: OpenAPI Specification
+      description: If the issue is related to a specific OpenAPI spec, include relevant portions
+      render: yaml
+      placeholder: "Include minimal OpenAPI spec that reproduces the issue"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Additional Environment Details
+      description: Any other relevant environment information
+      placeholder: |
+        - Docker version (if applicable):
+        - PostgreSQL version (if using database features):
+        - Reverse proxy setup (if applicable):
+        - Any relevant environment variables:
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: "Screenshots, related issues, attempted workarounds, etc."

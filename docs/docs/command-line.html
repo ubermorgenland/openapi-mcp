@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command-Line Options - openapi-mcp Documentation</title>
+  <meta name="description" content="Complete reference for all command-line options available in openapi-mcp.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html" class="active">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Command-Line Options</h1>
+        
+        <p class="lead">
+          This page provides a complete reference for all command-line options available in openapi-mcp.
+        </p>
+        
+        <h2>Usage</h2>
+        <p>
+          The basic command-line syntax for openapi-mcp is:
+        </p>
+        <pre><code class="language-bash">openapi-mcp [flags] &lt;openapi-spec-path&gt;</code></pre>
+        
+        <p>
+          The OpenAPI spec path is a required argument, and it should point to a valid OpenAPI 3.x YAML or JSON file.
+        </p>
+        
+        <h2>Commands</h2>
+        <p>
+          openapi-mcp supports several commands for different use cases:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Server Mode (Default)</h3>
+          <pre><code class="language-bash">openapi-mcp [flags] &lt;openapi-spec-path&gt;</code></pre>
+          <p>
+            Starts an MCP server that exposes all operations from the OpenAPI spec as tools. This is the default mode.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Validate Command</h3>
+          <pre><code class="language-bash">openapi-mcp [flags] validate &lt;openapi-spec-path&gt;</code></pre>
+          <p>
+            Validates the OpenAPI spec and reports critical issues that would prevent proper MCP tool generation. This includes:
+          </p>
+          <ul>
+            <li>Missing <code>operationId</code> fields (required for tool names)</li>
+            <li>Schema validation errors</li>
+            <li>Basic structural issues</li>
+          </ul>
+          <p>
+            Exits with non-zero status code if critical issues are found, making it perfect for CI/CD pipelines.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Lint Command</h3>
+          <pre><code class="language-bash">openapi-mcp [flags] lint &lt;openapi-spec-path&gt;</code></pre>
+          <p>
+            Performs comprehensive linting of the OpenAPI spec with detailed suggestions for best practices. This includes:
+          </p>
+          <ul>
+            <li>Missing summaries and descriptions</li>
+            <li>Untagged operations</li>
+            <li>Parameter naming and type recommendations</li>
+            <li>Security scheme validation</li>
+            <li>API design best practices</li>
+          </ul>
+          <p>
+            Provides actionable feedback to improve your API specification quality. Reports both errors and warnings.
+          </p>
+        </div>
+
+        <div class="card mb-4">
+          <h3>HTTP API Mode</h3>
+          <pre><code class="language-bash">openapi-mcp --http=:8080 validate
+openapi-mcp --http=:8080 lint</code></pre>
+          <p>
+            Both validate and lint commands can run as HTTP services using the <code>--http</code> flag. This creates dedicated REST API endpoints for validation/linting (these endpoints are only available in validate/lint mode, not during normal MCP server operation):
+          </p>
+          <ul>
+            <li><code>POST /validate</code> or <code>POST /lint</code> - Process OpenAPI specs sent in request body</li>
+            <li><code>GET /health</code> - Health check endpoint</li>
+          </ul>
+          <p>
+            Perfect for integrating into web applications, CI/CD pipelines, or microservice architectures.
+          </p>
+        </div>
+        
+        <h2>Flag Categories</h2>
+        <p>
+          The command-line flags are grouped into several categories:
+        </p>
+        <ul>
+          <li><a href="#server-flags">Server Flags</a>: Configure how the server runs</li>
+          <li><a href="#authentication-flags">Authentication Flags</a>: Configure authentication for API calls</li>
+          <li><a href="#filtering-flags">Filtering Flags</a>: Filter which operations are exposed as tools</li>
+          <li><a href="#output-flags">Output Flags</a>: Control the output format and behavior</li>
+          <li><a href="#documentation-flags">Documentation Flags</a>: Generate documentation for tools</li>
+          <li><a href="#safety-flags">Safety Flags</a>: Configure safety features</li>
+        </ul>
+        
+        <h2 id="server-flags">Server Flags</h2>
+        <div class="card mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Environment Variable</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--http=ADDR</code></td>
+                <td>-</td>
+                <td>
+                  Serve MCP over HTTP instead of stdio.<br>
+                  Example: <code>--http=:8080</code><br>
+                  <strong>Note:</strong> In HTTP mode, authentication can also be provided via headers:
+                  <code>X-API-Key</code>, <code>Api-Key</code>, <code>Authorization: Bearer &lt;token&gt;</code>, 
+                  <code>Authorization: Basic &lt;credentials&gt;</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--mount /base:path/to/spec.yaml</code></td>
+                <td>-</td>
+                <td>
+                  Mount an OpenAPI spec at a base path (repeatable, can be used multiple times).<br>
+                  Example: <code>--mount /petstore:petstore.yaml --mount /books:books.yaml</code><br>
+                  By default, this will serve the Petstore API at <code>/petstore</code> (StreamableHTTP), and the Books API at <code>/books</code>. If you use <code>--http-transport=sse</code>, endpoints like <code>/petstore/sse</code> and <code>/petstore/message</code> will be available for SSE clients.
+                </td>
+              </tr>
+              <tr>
+                <td><code>--base-url=URL</code></td>
+                <td><code>OPENAPI_BASE_URL</code></td>
+                <td>
+                  Override the base URL for HTTP calls.<br>
+                  Example: <code>--base-url=https://api.example.com</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h3>Multi-Mount Example</h3>
+        <pre><code class="language-bash">openapi-mcp --http=:8080 --mount /petstore:petstore.yaml --mount /books:books.yaml
+</code></pre>
+        <p>
+        This will serve multiple OpenAPI schemas at different base paths. Each API will be available at its own prefix (e.g., <code>/petstore/sse</code>, <code>/books/sse</code>).
+        </p>
+        
+        <h2 id="authentication-flags">Authentication Flags</h2>
+        
+        <p>
+          Authentication can be provided via command-line flags, environment variables, or HTTP headers (when using <code>--http</code> mode).
+        </p>
+        
+        <div class="card mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Environment Variable</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--api-key=KEY</code></td>
+                <td><code>API_KEY</code></td>
+                <td>
+                  API key for authenticated endpoints.<br>
+                  Example: <code>--api-key=your_api_key</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--bearer-token=TOKEN</code></td>
+                <td><code>BEARER_TOKEN</code></td>
+                <td>
+                  Bearer token for Authorization header.<br>
+                  Example: <code>--bearer-token=your_token</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--basic-auth=USER:PASS</code></td>
+                <td><code>BASIC_AUTH</code></td>
+                <td>
+                  Basic auth credentials (username:password).<br>
+                  Example: <code>--basic-auth=username:password</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h2 id="filtering-flags">Filtering Flags</h2>
+        <div class="card mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Environment Variable</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--tag=TAG</code></td>
+                <td><code>OPENAPI_TAG</code></td>
+                <td>
+                  Only include operations with this tag.<br>
+                  Example: <code>--tag=admin</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--include-desc-regex=REGEX</code></td>
+                <td><code>INCLUDE_DESC_REGEX</code></td>
+                <td>
+                  Only include APIs whose description matches this regex.<br>
+                  Example: <code>--include-desc-regex="user|account"</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--exclude-desc-regex=REGEX</code></td>
+                <td><code>EXCLUDE_DESC_REGEX</code></td>
+                <td>
+                  Exclude APIs whose description matches this regex.<br>
+                  Example: <code>--exclude-desc-regex="deprecated"</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h2 id="output-flags">Output Flags</h2>
+        <div class="card mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Environment Variable</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--extended</code></td>
+                <td>-</td>
+                <td>
+                  Enable extended (human-friendly) output.<br>
+                  Default output is minimal and agent-friendly.
+                </td>
+              </tr>
+              <tr>
+                <td><code>--dry-run</code></td>
+                <td>-</td>
+                <td>
+                  Print the generated MCP tool schemas as JSON and exit.<br>
+                  Useful for debugging and previewing.
+                </td>
+              </tr>
+              <tr>
+                <td><code>--summary</code></td>
+                <td>-</td>
+                <td>
+                  Print operation count summary.<br>
+                  Shows count of operations by tag.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h2 id="documentation-flags">Documentation Flags</h2>
+        <div class="card mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Environment Variable</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--doc=FILE</code></td>
+                <td>-</td>
+                <td>
+                  Write documentation for all tools to this file.<br>
+                  Example: <code>--doc=tools.md</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--doc-format=FORMAT</code></td>
+                <td>-</td>
+                <td>
+                  Documentation format: markdown (default) or html.<br>
+                  Example: <code>--doc-format=html</code>
+                </td>
+              </tr>
+              <tr>
+                <td><code>--post-hook-cmd=CMD</code></td>
+                <td>-</td>
+                <td>
+                  Command to post-process the generated tool schema JSON.<br>
+                  Example: <code>--post-hook-cmd='jq . | tee /tmp/filtered.json'</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h2 id="safety-flags">Safety Flags</h2>
+        <div class="card mb-4">
+          <table>
+            <thead>
+              <tr>
+                <th>Flag</th>
+                <th>Environment Variable</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--no-confirm-dangerous</code></td>
+                <td>-</td>
+                <td>
+                  Disable confirmation for dangerous (PUT/POST/DELETE) actions.<br>
+                  <strong>Warning:</strong> Use with caution as this can lead to unintended changes.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h2>Examples</h2>
+        
+        <div class="card mb-4">
+          <h3>Basic Usage</h3>
+          <pre><code class="language-bash">bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This loads the OpenAPI spec, validates it, and starts an MCP server in stdio mode.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Validate OpenAPI Spec</h3>
+          <pre><code class="language-bash">bin/openapi-mcp validate examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This validates the OpenAPI spec and reports any critical issues that would prevent proper tool generation.
+            Perfect for CI/CD pipelines to ensure spec quality.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Comprehensive Linting</h3>
+          <pre><code class="language-bash">bin/openapi-mcp lint examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This performs detailed linting with suggestions for best practices, including missing summaries, 
+            descriptions, tags, and parameter recommendations.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>HTTP Validation Service</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --http=:8080 validate</code></pre>
+          <p>
+            This starts an HTTP server that accepts OpenAPI specs via POST requests to <code>/validate</code>.
+            Returns structured JSON responses with validation results.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>HTTP Linting Service</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --http=:8080 lint</code></pre>
+          <p>
+            This starts an HTTP server that provides comprehensive linting via POST requests to <code>/lint</code>.
+            Perfect for integrating into web applications or CI/CD pipelines.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>HTTP Server with API Key</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --http=:8080 --api-key=your_api_key examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This starts an HTTP server on port 8080 and configures API key authentication.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Filtering Operations</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --tag=admin --exclude-desc-regex="deprecated" examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This includes only operations with the "admin" tag and excludes any operations with "deprecated" in their description.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Generating Documentation</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --doc=tools.md --doc-format=markdown examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This generates Markdown documentation for all tools and writes it to tools.md.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Post-Processing</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --dry-run --post-hook-cmd='jq . | tee /tmp/filtered.json' examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This generates the tool schemas, passes them through jq for formatting, and saves to a file.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Summary and Dry Run</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --summary --dry-run examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            This prints a summary of the operations by tag and exits without starting a server.
+          </p>
+        </div>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you understand the command-line options, you can:
+        </p>
+        <ul>
+          <li>Explore <a href="./advanced.html">advanced usage</a> patterns</li>
+          <li>Check out <a href="../examples/">examples</a> for more implementation ideas</li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

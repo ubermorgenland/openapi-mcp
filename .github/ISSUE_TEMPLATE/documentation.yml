@@ -1,0 +1,144 @@
+name: 📚 Documentation Improvement
+description: Suggest improvements to documentation, guides, or examples
+title: "[Docs]: "
+labels: ["documentation", "good-first-issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Clear, helpful documentation is crucial for project adoption and community growth.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checks
+      description: Please verify these before submitting
+      options:
+        - label: I have checked if this documentation exists elsewhere
+          required: true
+        - label: I have identified the specific location that needs improvement
+          required: true
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation needs improvement?
+      options:
+        - README and getting started
+        - API/Code documentation (godoc)
+        - Usage examples and tutorials
+        - Architecture and design docs
+        - Contributing guidelines
+        - Troubleshooting guides
+        - Database setup and configuration
+        - Authentication and security
+        - Deployment and operations
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation that needs improvement?
+      placeholder: "README.md, pkg/openapi2mcp/server.go, examples/, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-issue
+    attributes:
+      label: Current Issue
+      description: What's wrong with the current documentation?
+      placeholder: |
+        Example: "The authentication section in README.md doesn't explain how to use multiple API keys with different endpoints in database mode."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-improvement
+    attributes:
+      label: Proposed Improvement
+      description: What would make this documentation better?
+      placeholder: |
+        Describe what you'd like to see added, changed, or clarified.
+        
+        Example: "Add a section showing how to:
+        1. Set different API keys for different specs using spec-manager
+        2. Use endpoint-specific environment variables as fallbacks
+        3. Provide examples of the authentication priority system in action"
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-audience
+    attributes:
+      label: Target Audience
+      description: Who would benefit from this documentation improvement?
+      options:
+        - New users getting started
+        - Developers integrating the library
+        - System administrators deploying
+        - Contributors to the project
+        - AI/LLM application builders
+        - OpenAPI specification authors
+      placeholder: "Select or describe the target audience for this improvement"
+
+  - type: textarea
+    id: example-content
+    attributes:
+      label: Example Content (Optional)
+      description: If you have ideas for specific content, share them here
+      render: markdown
+      placeholder: |
+        Example improved documentation:
+        
+        ## Multi-API Authentication Setup
+        
+        When using multiple APIs with different authentication requirements:
+        
+        ```sh
+        # Set API keys for specific endpoints
+        bin/spec-manager set-token 1 "weather-api-key-123"
+        bin/spec-manager set-token 2 "twitter-bearer-token-456" 
+        
+        # Start server - automatically applies correct auth types
+        bin/openapi-mcp --http :8080
+        ```
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution Offer
+      description: How would you like to help with this documentation?
+      options:
+        - label: I can write the improved documentation
+        - label: I can provide examples and use cases
+        - label: I can review and test the documentation
+        - label: I can help with formatting and structure
+        - label: I just want to report the issue for someone else to handle
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this documentation improvement?
+      options:
+        - "Low - Minor improvement"
+        - "Medium - Would help users significantly"
+        - "High - Critical for usability"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that would be helpful
+      placeholder: |
+        - Related documentation that works well
+        - Specific user feedback you've received
+        - Links to external resources
+        - Screenshots of confusing sections

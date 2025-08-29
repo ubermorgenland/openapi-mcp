@@ -1,0 +1,57 @@
+openapi: 3.0.0
+info:
+  title: Alpha Vantage API
+  description: This is an API specification for the Alpha Vantage API, which provides various financial data.
+  version: 1.0.0
+
+servers:
+  - url: https://www.alphavantage.co/query
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: apikey
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /query:
+    get:
+      tags:
+        - Query
+      summary: Fetches financial data
+      description: |
+        Invokes the 'query' function of the Alpha Vantage API to fetch specific financial data.  
+        It's essential to provide both the 'function' and 'symbol' parameters.  
+        The 'function' parameter specifies the type of financial data (e.g., 'OVERVIEW', 'INCOME_STATEMENT', 'BALANCE_SHEET', or 'CASH_FLOW'), and the 'symbol' parameter indicates the equity of interest.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: function
+          in: query
+          required: true
+          description: The function to be performed by the API
+          schema:
+            type: string
+            enum:
+              - OVERVIEW
+              - INCOME_STATEMENT
+              - BALANCE_SHEET
+              - CASH_FLOW
+        - name: symbol
+          in: query
+          required: true
+          description: The symbol of the equity you're interested in (used with equity-related functions).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true

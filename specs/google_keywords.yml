@@ -1,0 +1,132 @@
+openapi: 3.0.0
+info:
+  title: Google Keyword Insight API
+  version: 1.0.0
+  description: |
+    A proxy API for retrieving global keyword statistics, URL insights, and top related keywords via RapidAPI.
+servers:
+  - url: https://google-keyword-insight1.p.rapidapi.com
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-rapidapi-key
+  parameters:
+    XRapidapiHost:
+      name: x-rapidapi-host
+      in: header
+      required: true
+      schema:
+        type: string
+      example: google-keyword-insight1.p.rapidapi.com
+  schemas:
+    GenericResponse:
+      type: object
+      description: Response payload (schema varies by endpoint)
+      additionalProperties: true
+paths:
+  /globalkey/:
+    get:
+      summary: Get global statistics for a keyword
+      description: |
+        Returns global search volume and related metrics for the given keyword.
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The search keyword to look up (URL-encoded if necessary).
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Language code (e.g., "en").
+        - $ref: '#/components/parameters/XRapidapiHost'
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '4XX':
+          description: Client error
+        '5XX':
+          description: Server error
+
+  /globalurl/:
+    get:
+      summary: Get global statistics for a URL
+      description: |
+        Returns global search volume and related metrics for the given URL.
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The URL to look up (e.g., "rapidapi.com").
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Language code (e.g., "en").
+        - $ref: '#/components/parameters/XRapidapiHost'
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '4XX':
+          description: Client error
+        '5XX':
+          description: Server error
+
+  /topkeys/:
+    get:
+      summary: Get top related keywords for a given keyword
+      description: |
+        Returns a list of the top related keywords for the specified keyword in a given location and language.
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The base keyword to find related terms for.
+        - name: location
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Location code (e.g., "US").
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Language code (e.g., "en").
+        - $ref: '#/components/parameters/XRapidapiHost'
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '4XX':
+          description: Client error
+        '5XX':
+          description: Server error

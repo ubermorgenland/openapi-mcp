@@ -1,0 +1,380 @@
+openapi: 3.0.1
+info:
+  title: Google Finance Trends API
+  version: 1.0.0
+servers:
+  - url: https://google-finance8.p.rapidapi.com
+security:
+  - ApiKeyAuth: []
+paths:
+  /search:
+    get:
+      summary: Search for a company based on title
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resp1'
+      parameters:
+        - in: query
+          name: hl
+          schema:
+            type: string
+          example: en
+        - in: query
+          name: q
+          schema:
+            type: string
+          example: Airbnb
+        - in: query
+          name: gl
+          schema:
+            type: string
+          example: US
+  /market-trends:
+    get:
+      summary: Financial market trends for categories - indexes most-active gainers losers climate-leaders cryptocurrencies currencies
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resp2'
+      parameters:
+        - in: query
+          name: t
+          schema:
+            type: string
+            enum:
+              - indexes
+              - most-active
+              - gainers
+              - losers
+              - climate‑leaders
+              - cryptocurrencies
+              - currencies
+        - in: query
+          name: gl
+          schema:
+            type: string
+          example: US
+        - in: query
+          name: s
+          schema:
+            type: string
+          example: en
+  /ticker:
+    get:
+      summary: Information about a company based on a ticker / symbol
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resp3'
+      parameters:
+        - in: query
+          name: t
+          schema:
+            type: string
+          example: ABNB:NASDAQ
+        - in: query
+          name: hl
+          schema:
+            type: string
+          example: en
+        - in: query
+          name: gl
+          schema:
+            type: string
+          example: US
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-rapidapi-key
+  schemas:
+    Resp1:
+      type: array
+      items:
+        type: object
+        properties:
+          info:
+            type: object
+            properties:
+              type:
+                type: string
+              title:
+                type: string
+              ticker:
+                type: string
+              ticker_symbols:
+                type: array
+                items:
+                  type: string
+              country_code:
+                type: string
+              exchange:
+                type: object
+                properties:
+                  primary:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+                  secondary:
+                    type: object
+                    properties:
+                      symbol:
+                        type: string
+                      name:
+                        type: string
+          price:
+            type: object
+            properties:
+              currency:
+                type: string
+              previous_close:
+                type: number
+              last:
+                type: object
+                properties:
+                  time:
+                    type: integer
+                  value:
+                    type: number
+                  today_change:
+                    type: number
+                  today_change_percent:
+                    type: number
+              after_hours:
+                type: object
+                properties:
+                  value:
+                    type: number
+                  change:
+                    type: number
+                  change_percent:
+                    type: number
+    Resp2:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              info:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  title:
+                    type: string
+                  ticker:
+                    type: string
+                  ticker_symbols:
+                    type: array
+                    items:
+                      type: string
+                  country_code:
+                    type: string
+                  exchange:
+                    type: object
+                    properties:
+                      primary:
+                        type: object
+                        properties:
+                          symbol:
+                            type: string
+                          name:
+                            type: string
+                      secondary:
+                        type: object
+                        properties:
+                          symbol:
+                            type: string
+                          name:
+                            type: string
+              price:
+                type: object
+                properties:
+                  currency:
+                    type: string
+                  previous_close:
+                    type: number
+                  last:
+                    type: object
+                    properties:
+                      time:
+                        type: integer
+                      value:
+                        type: number
+                      today_change:
+                        type: number
+                      today_change_percent:
+                        type: number
+                  after_hours:
+                    type: object
+                    properties:
+                      value:
+                        type: number
+                      change:
+                        type: number
+                      change_percent:
+                        type: number
+    Resp3:
+      type: object
+      properties:
+        info:
+          type: object
+          properties:
+            type:
+              type: string
+            title:
+              type: string
+            ticker:
+              type: string
+            ticker_symbols:
+              type: array
+              items:
+                type: string
+            country_code:
+              type: string
+        about:
+          type: object
+          properties:
+            symbol:
+              type: string
+            name:
+              type: string
+            description:
+              type: string
+            about_url:
+              type: string
+            headquarters:
+              type: object
+              properties:
+                city:
+                  type: string
+                state:
+                  type: string
+                country:
+                  type: string
+                country_code:
+                  type: string
+                address:
+                  type: string
+            founded:
+              type: object
+              properties:
+                year:
+                  type: integer
+                month:
+                  type: string
+                day:
+                  type: string
+            ceo:
+              type: string
+            employees:
+              type: integer
+            website:
+              type: string
+        price:
+          type: object
+          properties:
+            currency:
+              type: string
+            previous_close:
+              type: number
+            last:
+              type: object
+              properties:
+                value:
+                  type: number
+                today_change:
+                  type: number
+                today_change_percent:
+                  type: number
+                time:
+                  type: integer
+            after_market_closing:
+              type: object
+              properties:
+                value:
+                  type: number
+                change:
+                  type: number
+                change_percent:
+                  type: number
+        charts:
+          type: object
+          properties:
+            1day:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                  price:
+                    type: number
+            1month:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                  price:
+                    type: number
+        news:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              title:
+                type: string
+              thumbnail:
+                type: string
+              published_time:
+                type: integer
+              source:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  logo:
+                    type: string
+        stats:
+          type: object
+          properties:
+            currency:
+              type: string
+            day_range:
+              type: string
+            year_range:
+              type: string
+            market_cap:
+              type: string
+            volume:
+              type: integer
+            pe_ratio:
+              type: number
+            dividend_yield:
+              type: string
+            primary_market:
+              type: string

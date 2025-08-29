@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Start - openapi-mcp Documentation</title>
+  <meta name="description" content="Get started quickly with openapi-mcp and learn the basic usage patterns.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html" class="active">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Quick Start</h1>
+        
+        <p class="lead">
+          This guide will help you quickly get up and running with openapi-mcp, from basic setup to your first API interactions.
+        </p>
+        
+        <h2>Prerequisites</h2>
+        <p>Before starting, ensure you have:</p>
+        <ul>
+          <li>Built the openapi-mcp binaries (see <a href="./installation.html">Installation</a>)</li>
+          <li>An OpenAPI 3.x YAML or JSON specification file</li>
+        </ul>
+        
+        <div class="card mb-4">
+          <h3>Sample OpenAPI Spec</h3>
+          <p>
+            If you don't have an OpenAPI spec handy, you can use the included example:
+          </p>
+          <pre><code class="language-bash">examples/fastly-openapi-mcp.yaml</code></pre>
+        </div>
+        
+        <h2>Step 1: Start the MCP Server</h2>
+        <p>
+          The simplest way to run openapi-mcp is in stdio mode with your OpenAPI spec:
+        </p>
+        <pre><code class="language-bash">bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <p>
+          This loads the OpenAPI spec, validates it, generates MCP tools for each operation, and starts an MCP server that communicates over stdin/stdout.
+        </p>
+        
+        <p>
+          If your API requires authentication, you can provide it via command-line flags or environment variables:
+        </p>
+        <pre><code class="language-bash"># Using API key
+API_KEY=your_api_key bin/openapi-mcp examples/fastly-openapi-mcp.yaml
+
+# Using Bearer token
+BEARER_TOKEN=your_token bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <p>
+          To run as an HTTP server instead of stdio mode:
+        </p>
+        <pre><code class="language-bash">bin/openapi-mcp --http=:8080 examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <div class="card mb-4">
+          <h3>HTTP Mode Authentication</h3>
+          <p>
+            When using HTTP mode, you can provide authentication via HTTP headers in your requests:
+          </p>
+          <pre><code class="language-bash"># Example with API key header
+curl -H "X-API-Key: your_key" http://localhost:8080/mcp -d '...'
+
+# Example with Bearer token  
+curl -H "Authorization: Bearer your_token" http://localhost:8080/mcp -d '...'</code></pre>
+        </div>
+        
+        <h2>Step 2: Use the Interactive Client</h2>
+        <p>
+          The mcp-client is an interactive client that allows you to explore the available MCP tools and make calls:
+        </p>
+        <pre><code class="language-bash">bin/mcp-client bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <p>
+          If you're running in HTTP mode, connect to the HTTP endpoint:
+        </p>
+        <pre><code class="language-bash">bin/mcp-client http://localhost:8080</code></pre>
+        
+        <h2>Step 3: Explore Available Tools</h2>
+        <p>
+          Once in the client, you can list all available tools:
+        </p>
+        <pre><code>mcp> list</code></pre>
+        
+        <p>
+          This will display all the operations from your OpenAPI spec that have been converted to MCP tools.
+        </p>
+        
+        <h2>Step 4: View Tool Schema</h2>
+        <p>
+          To see the schema for a specific tool, use the <code>schema</code> command:
+        </p>
+        <pre><code>mcp> schema createService</code></pre>
+        
+        <p>
+          This shows the expected input parameters, including data types, descriptions, and whether they're required.
+        </p>
+        
+        <h2>Step 5: Call a Tool</h2>
+        <p>
+          To call a tool, use the <code>call</code> command with JSON arguments:
+        </p>
+        <pre><code>mcp> call createService {"name": "My Service", "type": "vcl"}</code></pre>
+        
+        <p>
+          The client will make the API call and display the response.
+        </p>
+        
+        <h2>Step 6: Handle Confirmation for Dangerous Operations</h2>
+        <p>
+          For dangerous operations (PUT, POST, DELETE), openapi-mcp requires confirmation:
+        </p>
+        <pre><code>mcp> call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY"}
+
+{
+  "type": "confirmation_request",
+  "confirmation_required": true,
+  "message": "This action is irreversible. Proceed?",
+  "action": "delete_resource"
+}</code></pre>
+        
+        <p>
+          To proceed, retry with the <code>__confirmed</code> parameter:
+        </p>
+        <pre><code>mcp> call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY", "__confirmed": true}</code></pre>
+        
+        <h2>Step 7: Get Complete API Documentation</h2>
+        <p>
+          To get complete documentation for all available tools, use the <code>describe</code> tool:
+        </p>
+        <pre><code>mcp> call describe</code></pre>
+        
+        <p>
+          This returns comprehensive information about all available tools, including schemas, examples, and descriptions.
+        </p>
+        
+        <h2>Serving Multiple APIs (Multi-Mount)</h2>
+        <p>
+        You can serve multiple OpenAPI specs at different base paths using the <code>--mount</code> flag in HTTP mode:
+        </p>
+        <pre><code class="language-bash">openapi-mcp --http=:8080 --mount /petstore:petstore.yaml --mount /books:books.yaml
+        </code></pre>
+        <p>
+        By default, this will serve the Petstore API at <code>/petstore</code> (StreamableHTTP), and the Books API at <code>/books</code>. If you use <code>--http-transport=sse</code>, endpoints like <code>/petstore/sse</code> and <code>/petstore/message</code> will be available for SSE clients.
+        </p>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you've got the basics down, here are some next steps:
+        </p>
+        <ul>
+          <li>Explore <a href="./authentication.html">authentication options</a> for your API</li>
+          <li>Learn about <a href="./configuration.html">configuration options</a> for openapi-mcp</li>
+          <li>Understand how to <a href="./ai-integration.html">integrate with AI agents</a></li>
+          <li>Check out <a href="../examples/">more examples</a> of how to use openapi-mcp</li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

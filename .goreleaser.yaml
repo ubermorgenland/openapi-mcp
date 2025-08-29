@@ -1,0 +1,91 @@
+# GoReleaser configuration for openapi-mcp
+# This will build and release binaries for multiple platforms when a new tag is pushed
+
+version: 2
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+
+builds:
+  - id: openapi-mcp
+    main: ./cmd/openapi-mcp
+    binary: openapi-mcp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+  - id: mcp-client
+    main: ./cmd/mcp-client
+    binary: mcp-client
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+# Release to GitHub
+release:
+  github:
+    owner: jedisct1
+    name: openapi-mcp
+  prerelease: auto
+  draft: false
+  name_template: "{{ .ProjectName }} v{{ .Version }}"
+  header: |
+    # {{ .ProjectName }} v{{ .Version }}
+
+    ## What's New
+    
+    For a full list of changes, see the [changelog](CHANGELOG.md).

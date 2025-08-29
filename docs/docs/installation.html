@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installation - openapi-mcp Documentation</title>
+  <meta name="description" content="Learn how to install and build openapi-mcp from source.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html" class="active">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Installation</h1>
+        
+        <p class="lead">
+          This guide will walk you through installing and building openapi-mcp from source.
+        </p>
+        
+        <h2>Prerequisites</h2>
+        <p>Before you begin, ensure you have the following prerequisites:</p>
+        <ul>
+          <li>Go 1.21 or higher (<a href="https://golang.org/dl/" target="_blank">Download Go</a>)</li>
+          <li>Git for cloning the repository</li>
+          <li>An OpenAPI 3.x YAML or JSON specification file that you want to expose as MCP tools</li>
+        </ul>
+        
+        <h2>Build from Source</h2>
+        <p>
+          To build openapi-mcp from source, follow these steps:
+        </p>
+        
+        <h3>1. Clone the Repository</h3>
+        <pre><code class="language-bash">git clone https://github.com/jedisct1/openapi-mcp.git
+cd openapi-mcp</code></pre>
+        
+        <h3>2. Build the Binaries</h3>
+        <p>
+          openapi-mcp uses a Makefile to simplify the build process. To build all binaries, run:
+        </p>
+        <pre><code class="language-bash">make</code></pre>
+        
+        <p>
+          This will place the command-line tools in the <code>bin</code> directory:
+        </p>
+        <ul>
+          <li><code>bin/openapi-mcp</code> - Main tool that processes OpenAPI specs and serves MCP</li>
+          <li><code>bin/mcp-client</code> - Interactive client for testing MCP tools</li>
+        </ul>
+        
+        <p>
+          To build specific binaries:
+        </p>
+        <pre><code class="language-bash"># Build only the main tool
+make bin/openapi-mcp
+
+# Build only the client
+make bin/mcp-client</code></pre>
+        
+        <h3>3. Clean Build Artifacts (Optional)</h3>
+        <p>
+          To clean build artifacts:
+        </p>
+        <pre><code class="language-bash">make clean</code></pre>
+        
+        <h2>Verifying Installation</h2>
+        <p>
+          To verify that the installation was successful, run:
+        </p>
+        <pre><code class="language-bash">bin/openapi-mcp --help</code></pre>
+        
+        <p>
+          You should see the help message with available command-line options.
+        </p>
+        
+        <h2>Using Pre-built Binaries (When Available)</h2>
+        <p>
+          For some platforms, pre-built binaries may be available from the 
+          <a href="https://github.com/jedisct1/openapi-mcp/releases" target="_blank">GitHub releases page</a>.
+        </p>
+        <p>
+          Download the appropriate binary for your platform, extract it, and place it in your PATH.
+        </p>
+        
+        <h2>Go Library Installation</h2>
+        <p>
+          To use openapi-mcp as a Go library in your own applications:
+        </p>
+        
+        <h3>Main Library</h3>
+        <p>
+          For OpenAPI to MCP conversion functionality:
+        </p>
+        <pre><code class="language-bash">go get github.com/jedisct1/openapi-mcp/pkg/openapi2mcp</code></pre>
+        
+        <h3>MCP Package</h3>
+        <p>
+          For direct access to MCP server functionality:
+        </p>
+        <pre><code class="language-bash">go get github.com/jedisct1/openapi-mcp/pkg/mcp/server</code></pre>
+        
+        <p>
+          For MCP types and utilities:
+        </p>
+        <pre><code class="language-bash">go get github.com/jedisct1/openapi-mcp/pkg/mcp/mcp</code></pre>
+        
+        <p>
+          See the <a href="./library-usage.html">Library Usage</a> documentation for detailed examples and API reference.
+        </p>
+
+        <h2>Next Steps</h2>
+        <p>
+          Now that you have installed openapi-mcp, you can:
+        </p>
+        <ul>
+          <li><a href="./quick-start.html">Get started</a> with your first OpenAPI spec</li>
+          <li><a href="./library-usage.html">Use openapi-mcp as a Go library</a></li>
+          <li>Learn about <a href="./authentication.html">authentication options</a></li>
+          <li>Explore <a href="./configuration.html">configuration options</a></li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

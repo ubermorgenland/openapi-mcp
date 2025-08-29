@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>openapi-mcp - Transform OpenAPI Specs into MCP Tool Servers</title>
+    <meta name="description" content="openapi-mcp transforms any OpenAPI 3.x specification into a powerful, AI-friendly MCP (Model Context Protocol) tool server in seconds.">
+    <!-- Favicon -->
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="./css/styles.css">
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="site-header">
+      <div class="container">
+        <nav class="navbar">
+          <a href="./" class="logo">
+            <img src="./images/logo.svg" alt="openapi-mcp logo">
+            <span>openapi-mcp</span>
+          </a>
+          <button class="mobile-menu-toggle" aria-label="Toggle menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <ul class="nav-links">
+            <li><a href="./">Home</a></li>
+            <li><a href="./docs/">Documentation</a></li>
+            <li><a href="./examples/">Examples</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container">
+        <h1>Transform OpenAPI Specs into AI-Friendly Tools</h1>
+        <p>
+          openapi-mcp enables any OpenAPI 3.x specification to be served as a robust, machine-readable MCP tool server.
+        Validate your API specs, generate MCP tools, and start serving through stdio or HTTP in seconds.
+        </p>
+        <div class="hero-buttons">
+          <a href="./docs/" class="button button-secondary">Documentation</a>
+          <a href="https://github.com/jedisct1/openapi-mcp" class="button button-outline" target="_blank">View on GitHub</a>
+        </div>
+      </div>
+    </section>
+    <!-- Features Section -->
+    <section class="features" id="features">
+      <div class="container">
+        <h2 class="section-title">Key Features</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3 class="feature-title">Instant API to MCP Conversion</h3>
+            <p>Parse any OpenAPI 3.x YAML/JSON spec and generate MCP tools automatically. Get up and running in seconds.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3 class="feature-title">AI-Optimized</h3>
+            <p>Unique features designed specifically for AI agents with structured responses, rich schema information, intelligent error handling, and machine-optimized output formats.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3 class="feature-title">Comprehensive Authentication</h3>
+            <p>API key, Bearer token, Basic auth, and OAuth2 support for all your authentication needs.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3 class="feature-title">Safety Features</h3>
+            <p>Built-in confirmation workflow for dangerous operations (PUT/POST/DELETE) to prevent accidental changes.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📚</div>
+            <h3 class="feature-title">Library Integration</h3>
+            <p>Import as a Go module in your projects for seamless integration with your own applications.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="feature-title">Validation & Linting</h3>
+            <p>Powerful OpenAPI validation and linting with actionable suggestions. Validate for critical issues or lint for comprehensive best practices analysis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Quick Start -->
+    <section class="py-5" id="quickstart">
+      <div class="container">
+        <h2 class="section-title">Quick Start</h2>
+        <div class="card mb-4">
+          <h3>1. Build from Source</h3>
+          <pre><code class="language-bash"># Clone the repository
+git clone https://github.com/jedisct1/openapi-mcp.git
+cd openapi-mcp
+
+# Build the binaries
+make
+
+# This will create:
+# - bin/openapi-mcp (main tool)
+# - bin/mcp-client (interactive client)</code></pre>
+        </div>
+        <div class="card mb-4">
+          <h3>2. Validate & Lint (Optional)</h3>
+          <pre><code class="language-bash"># Validate your OpenAPI spec for critical issues
+bin/openapi-mcp validate examples/fastly-openapi-mcp.yaml
+
+# Comprehensive linting with best practice suggestions
+bin/openapi-mcp lint examples/fastly-openapi-mcp.yaml</code></pre>
+        </div>
+        <div class="card mb-4">
+          <h3>3. Run the MCP Server</h3>
+          <pre><code class="language-bash"># Basic usage (stdio mode)
+bin/openapi-mcp examples/fastly-openapi-mcp.yaml
+
+# With API key
+API_KEY=your_api_key bin/openapi-mcp examples/fastly-openapi-mcp.yaml
+
+# As HTTP server
+bin/openapi-mcp --http=:8080 examples/fastly-openapi-mcp.yaml</code></pre>
+        </div>
+        <div class="card">
+          <h3>4. Use the Interactive Client</h3>
+          <pre><code class="language-bash"># Start the client (connects to openapi-mcp via stdio)
+bin/mcp-client bin/openapi-mcp examples/fastly-openapi-mcp.yaml
+
+# Client commands
+mcp> list                              # List available tools
+mcp> schema &lt;tool-name&gt;                # Show tool schema
+mcp> call &lt;tool-name&gt; {arg1: value1}   # Call a tool with arguments
+mcp> describe                          # Get full API documentation</code></pre>
+        </div>
+        <div class="card mb-4">
+          <h3>5. Filter Operations (New!)</h3>
+          <pre><code class="language-bash"># Output only admin-tagged operations as JSON
+bin/openapi-mcp filter --tag=admin examples/fastly-openapi-mcp.yaml
+
+# Output operations whose description matches 'foo'
+bin/openapi-mcp filter --include-desc-regex=foo examples/fastly-openapi-mcp.yaml
+
+# Combine filters
+bin/openapi-mcp filter --tag=admin --include-desc-regex=foo examples/fastly-openapi-mcp.yaml
+</code></pre>
+          <p class="mt-2">This will output a JSON array of operations matching the filters, including their name, description, tags, and input schema.</p>
+        </div>
+      </div>
+    </section>
+    <!-- AI Agent Integration -->
+    <section class="py-5 bg-light" id="ai-integration">
+      <div class="container">
+        <h2 class="section-title">AI Agent Integration</h2>
+        <div class="row">
+          <div class="col">
+            <p class="lead">
+              openapi-mcp features unique AI optimizations that set it apart from standard API-to-tool converters:
+            </p>
+            <ul>
+              <li><strong>Structured JSON Responses:</strong>
+                Every response includes
+                <code>OutputFormat</code>
+                and
+                <code>OutputType</code>
+                fields for consistent parsing</li>
+              <li><strong>Rich Schema Information:</strong>
+                All tools provide detailed parameter constraints and examples that help AI agents understand API requirements</li>
+              <li><strong>Actionable Error Messages:</strong>
+                Validation errors include detailed information and suggestions that guide agents toward correct usage</li>
+              <li><strong>Safety Confirmations:</strong>
+                Standardized confirmation workflow for dangerous operations prevents unintended consequences</li>
+              <li><strong>Self-Describing API:</strong>
+                The
+                <code>describe</code>
+                tool provides complete, machine-readable documentation for all operations</li>
+              <li><strong>Minimal Verbosity:</strong>
+                No redundant warnings or messages to confuse agents—outputs are optimized for machine consumption</li>
+              <li><strong>Smart Parameter Handling:</strong>
+                Automatic conversion between OpenAPI parameter types and MCP tool parameters</li>
+              <li><strong>Contextual Examples:</strong>
+                Every tool includes context-aware examples based on the OpenAPI specification</li>
+            </ul>
+            <h3 class="mt-4">Integration with AI Code Editors</h3>
+            <p>
+              You can easily integrate openapi-mcp with AI code editors that support MCP tools, such as Roo Code:
+            </p>
+            <pre><code class="language-json">{
+    "fastly": {
+        "command": "/opt/bin/openapi-mcp",
+        "args": [
+            "-api-key",
+            "YOUR_API_KEY",
+            "/opt/etc/openapi/fastly-openapi-mcp.yaml"
+        ]
+    }
+}</code></pre>
+            <p>
+              Simply add this configuration to your editor's MCP tools configuration to provide AI assistants with direct access to the API.
+            </p>
+          </div>
+          <div class="col">
+            <div class="card">
+              <h4>Example Output Structure</h4>
+              <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "api_response",
+  "data": {
+    // API-specific response data
+  },
+  "metadata": {
+    "status_code": 200,
+    "headers": {
+      // Response headers
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Library Usage -->
+    <section class="py-5" id="library">
+      <div class="container">
+        <h2 class="section-title">Library Usage</h2>
+        <p>
+          openapi-mcp can be imported as a Go module in your projects, enabling you to integrate
+        MCP server capabilities directly into your applications.
+        </p>
+        
+        <div class="card mb-4">
+          <h4>Installation</h4>
+          <pre><code class="language-bash"># Main library for OpenAPI to MCP conversion
+go get github.com/jedisct1/openapi-mcp/pkg/openapi2mcp
+
+# MCP server package for server functionality
+go get github.com/jedisct1/openapi-mcp/pkg/mcp/server
+
+# MCP types package for core MCP utilities
+go get github.com/jedisct1/openapi-mcp/pkg/mcp/mcp</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h4>Basic Usage</h4>
+          <pre><code class="language-go">package main
+
+import (
+	"log"
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Load OpenAPI spec
+	doc, err := openapi2mcp.LoadOpenAPISpec("openapi.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	// Create MCP server
+	srv := openapi2mcp.NewServer("myapi", doc.Info.Version, doc)
+	
+	// Serve over HTTP
+	if err := openapi2mcp.ServeStreamableHTTP(srv, ":8080", "/mcp"); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <div class="card">
+          <h4>Advanced Usage with MCP Package</h4>
+          <pre><code class="language-go">import (
+	"context"
+	"github.com/jedisct1/openapi-mcp/pkg/mcp/mcp"
+	"github.com/jedisct1/openapi-mcp/pkg/mcp/server"
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+// Create server and add custom tools
+srv := server.NewMCPServer("myapi", "1.0")
+ops := openapi2mcp.ExtractOpenAPIOperations(doc)
+openapi2mcp.RegisterOpenAPITools(srv, ops, doc, nil)
+
+// Add custom tools using MCP package directly
+customTool := mcp.NewTool("custom", 
+	mcp.WithDescription("A custom tool"),
+	mcp.WithString("message", mcp.Required()))
+
+srv.AddTool(customTool, handlerFunc)</code></pre>
+        </div>
+        
+        <p class="mt-4">
+          See our comprehensive documentation:
+        </p>
+        <ul class="mt-2">
+          <li><a href="./docs/library-usage.html">Library Usage Guide</a></li>
+          <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">openapi2mcp GoDoc</a></li>
+          <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/mcp/server" target="_blank">mcp/server GoDoc</a></li>
+        </ul>
+      </div>
+    </section>
+    <!-- CTA Section -->
+    <section class="cta">
+      <div class="container">
+        <h2>Ready to Get Started?</h2>
+        <p class="mb-4">Unlock the power of your OpenAPI specifications with openapi-mcp</p>
+        <div class="hero-buttons">
+          <a href="./docs/" class="button button-secondary">Read the Docs</a>
+          <a href="https://github.com/jedisct1/openapi-mcp" class="button button-outline" target="_blank">View on GitHub</a>
+        </div>
+      </div>
+    </section>
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-column">
+            <h4>openapi-mcp</h4>
+            <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+          </div>
+          <div class="footer-column">
+            <h4>Documentation</h4>
+            <ul class="footer-links">
+              <li><a href="./docs/">Getting Started</a></li>
+              <li><a href="./docs/installation.html">Installation</a></li>
+              <li><a href="./docs/configuration.html">Configuration</a></li>
+              <li><a href="./docs/authentication.html">Authentication</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h4>Resources</h4>
+            <ul class="footer-links">
+              <li><a href="./examples/">Examples</a></li>
+              <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+              <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>Released under the MIT License.</p>
+        </div>
+      </div>
+    </footer>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+    <script src="./js/main.js"></script>
+  </body>
+</html>

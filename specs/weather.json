@@ -1,0 +1,2012 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Weather API",
+    "version": "1.0.2-oas3-oas3.1-oas3.1",
+    "description": "# Introduction\nWeatherAPI.com provides access to weather and geo data via a JSON/XML restful API. It allows developers to create desktop, web and mobile applications using this data very easy. We provide following data through our API:    \n- Real-time weather\n- 14 day weather forecast\n- Historical Weather\n- Marine Weather and Tide Data\n- Future Weather (Upto 365 days ahead)\n- Daily and hourly intervals\n- 15 min interval (Enterprise only)\n- Astronomy\n- Time zone\n- Location data\n- Sports\n- Search or Autocomplete API\n- Weather Alerts\n- Air Quality Data\n- Bulk Request\n\n# Getting Started  \n\nYou need to [signup](https://www.weatherapi.com/signup.aspx) and then you can find your API key under [your account](https://www.weatherapi.com/login.aspx), and start using API right away!\n\nTry our weather API by using interactive [API Explorer](https://www.weatherapi.com/api-explorer.aspx).\n\nWe also have SDK for popular framework/languages available on [Github](https://github.com/weatherapicom/) for quick integrations.\n\nIf you find any features missing or have any suggestions, please [contact us](https://www.weatherapi.com/contact.aspx).  \n\n# Authentication  \n\nAPI access to the data is protected by an API key. If at anytime, you find the API key has become vulnerable, please regenerate the key using Regenerate button next to the API key.  \n\nAuthentication to the WeatherAPI.com API is provided by passing your API key as request parameter through an API .    \n\n##  key parameter \nkey=YOUR API KEY \n"
+  },
+  "x-explorer-enabled": true,
+  "tags": [
+    {
+      "name": "APIs",
+      "description": "APIs"
+    }
+  ],
+  "paths": {
+    "/current.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Realtime API",
+        "description": "Current weather or realtime weather API method allows a user to get up to date current weather information in json and xml. The data is returned as a Current Object.<br /><br />Current object contains current or realtime weather information for a given city.",
+        "operationId": "realtime-weather",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "description": "Returns 'condition:text' field in API in the desired language.<br /> Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to check 'lang-code'.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "current": {
+                      "$ref": "#/components/schemas/current"
+                    }
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "current": {
+                      "$ref": "#/components/schemas/current"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/forecast.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Forecast API",
+        "description": "Forecast weather API method returns, depending upon your price plan level, upto next 14 day weather forecast and weather alert as json or xml. The data is returned as a Forecast Object.<br /><br />Forecast object contains astronomy data, day weather forecast and hourly interval weather information for a given city.",
+        "operationId": "forecast-weather",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": true,
+            "description": "Number of days of weather forecast. Value ranges from 1 to 14",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "dt",
+            "required": false,
+            "description": "Date should be between today and next 14 day in yyyy-MM-dd format. e.g. '2015-01-01'",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unixdt",
+            "required": false,
+            "description": "Please either pass 'dt' or 'unixdt' and not both in same request. unixdt should be between today and next 14 day in Unix format. e.g. 1490227200",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hour",
+            "required": false,
+            "description": "Must be in 24 hour. For example 5 pm should be hour=17, 6 am as hour=6",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "description": "Returns 'condition:text' field in API in the desired language.<br /> Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to check 'lang-code'.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "alerts",
+            "required": false,
+            "description": "Enable/Disable alerts in forecast API output. Example, alerts=yes or alerts=no.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "aqi",
+            "required": false,
+            "description": "Enable/Disable Air Quality data in forecast API output. Example, aqi=yes or aqi=no.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tp",
+            "required": false,
+            "description": "Get 15 min interval or 24 hour average data for Forecast and History API. Available for Enterprise clients only. E.g:- tp=15",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "current": {
+                      "$ref": "#/components/schemas/current"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/forecast"
+                    },
+                    "alerts": {
+                      "$ref": "#/components/schemas/alerts"
+                    }
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "current": {
+                      "$ref": "#/components/schemas/current"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/forecast"
+                    },
+                    "alerts": {
+                      "$ref": "#/components/schemas/alerts"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/future.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Future API",
+        "description": "Future weather API method returns weather in a 3 hourly interval in future for a date between 14 days and 365 days from today in the future.",
+        "operationId": "future-weather",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dt",
+            "required": false,
+            "description": "Date should be between 14 days and 300 days from today in the future in yyyy-MM-dd format (i.e. dt=2023-01-01)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "description": "Returns 'condition:text' field in API in the desired language.<br /> Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to check 'lang-code'.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/forecast"
+                    }
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/forecast"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/history.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "History API",
+        "description": "History weather API method returns historical weather for a date on or after 1st Jan, 2010 as json. The data is returned as a Forecast Object.",
+        "operationId": "history-weather",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dt",
+            "required": true,
+            "description": "Date on or after 1st Jan, 2015 in yyyy-MM-dd format",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unixdt",
+            "required": false,
+            "description": "Please either pass 'dt' or 'unixdt' and not both in same request.<br />unixdt should be on or after 1st Jan, 2015 in Unix format",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_dt",
+            "required": false,
+            "description": "Date on or after 1st Jan, 2015 in yyyy-MM-dd format<br />'end_dt' should be greater than 'dt' parameter and difference should not be more than 30 days between the two dates.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unixend_dt",
+            "required": false,
+            "description": "Date on or after 1st Jan, 2015 in Unix Timestamp format<br />unixend_dt has same restriction as 'end_dt' parameter. Please either pass 'end_dt' or 'unixend_dt' and not both in same request. e.g. unixend_dt=1490227200",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hour",
+            "required": false,
+            "description": "Must be in 24 hour. For example 5 pm should be hour=17, 6 am as hour=6",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "description": "Returns 'condition:text' field in API in the desired language.<br /> Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to check 'lang-code'.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/forecast"
+                    }
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/forecast"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/marine.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Marine Weather API",
+        "description": "Marine weather API method returns upto next 7 day (depending upon your price plan level) marine and sailing weather forecast and tide data (depending upon your price plan level) as json or xml. The data is returned as a Marine Object.<br /><br />Marine object, depending upon your price plan level, contains astronomy data, day weather forecast and hourly interval weather information and tide data for a given sea/ocean point.",
+        "operationId": "marine-weather",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass Latitude/Longitude (decimal degree) which is on a sea/ocean. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": true,
+            "description": "Number of days of weather forecast. Value ranges from 1 to 7",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "dt",
+            "required": false,
+            "description": "Date should be between today and next 7 day in yyyy-MM-dd format. e.g. '2023-05-20'",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unixdt",
+            "required": false,
+            "description": "Please either pass 'dt' or 'unixdt' and not both in same request. unixdt should be between today and next 7 day in Unix format. e.g. 1490227200",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hour",
+            "required": false,
+            "description": "Must be in 24 hour. For example 5 pm should be hour=17, 6 am as hour=6",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "description": "Returns 'condition:text' field in API in the desired language.<br /> Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to check 'lang-code'.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/marine"
+                    }
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "forecast": {
+                      "$ref": "#/components/schemas/marine"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/search.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Search/Autocomplete API",
+        "description": "WeatherAPI.com Search or Autocomplete API returns matching cities and towns as an array of Location object.",
+        "operationId": "search-autocomplete-weather",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayOfSearch"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayOfSearch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/ip.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "IP Lookup API",
+        "description": "IP Lookup API method allows a user to get up to date information for an IP address.",
+        "operationId": "ip-lookup",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass IP address.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ip"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/ip"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/timezone.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Time Zone API",
+        "description": "Return Location Object",
+        "operationId": "time-zone",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/location"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/location"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/astronomy.json": {
+      "get": {
+        "tags": [
+          "APIs"
+        ],
+        "summary": "Astronomy API",
+        "description": "Return Location and Astronomy Object",
+        "operationId": "astronomy",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "description": "Pass US Zipcode, UK Postcode, Canada Postalcode, IP address, Latitude/Longitude (decimal degree) or city name. Visit [request parameter section](https://www.weatherapi.com/docs/#intro-request) to learn more.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dt",
+            "required": true,
+            "description": "Date on or after 1st Jan, 2015 in yyyy-MM-dd format",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "astronomy": {
+                      "$ref": "#/components/schemas/astronomy"
+                    }
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "properties": {
+                    "location": {
+                      "$ref": "#/components/schemas/location"
+                    },
+                    "astronomy": {
+                      "$ref": "#/components/schemas/astronomy"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.weatherapi.com/v1"
+    }
+  ],
+  "components": {
+    "responses": {
+      "400": {
+        "description": "Error code 1003: Parameter 'q' not provided.<br />Error code 1005: API request url is invalid.<br />Error code 1006: No location found matching parameter 'q'<br />Error code 9000: Json body passed in bulk request is invalid. Please make sure it is valid json with utf-8 encoding.<br />Error code 9001: Json body contains too many locations for bulk request. Please keep it below 50 in a single request.<br />Error code 9999: Internal application error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/error400"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/error400"
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Error code 1002: API key not provided.<br />Error code 2006: API key provided is invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/error401"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/error401"
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Error code 2007: API key has exceeded calls per month quota.<br />Error code 2008: API key has been disabled.<br />Error code 2009: API key does not have access to the resource. Please check pricing page for what is allowed in your API subscription plan.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/error403"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/error403"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key"
+      }
+    },
+    "schemas": {
+      "search": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "example": 2796590
+          },
+          "name": {
+            "type": "string",
+            "example": "Holborn"
+          },
+          "region": {
+            "type": "string",
+            "example": "Camden Greater London"
+          },
+          "country": {
+            "type": "string",
+            "example": "United Kingdom"
+          },
+          "lat": {
+            "type": "number",
+            "example": 51.52
+          },
+          "lon": {
+            "type": "number",
+            "example": -0.12
+          },
+          "url": {
+            "type": "string",
+            "example": "holborn-camden-greater-london-united-kingdom"
+          }
+        }
+      },
+      "ArrayOfSearch": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/search"
+        }
+      },
+      "location": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "New York"
+          },
+          "region": {
+            "type": "string",
+            "example": "New York"
+          },
+          "country": {
+            "type": "string",
+            "example": "United States of America"
+          },
+          "lat": {
+            "type": "number",
+            "example": 40.71
+          },
+          "lon": {
+            "type": "number",
+            "example": -74.01
+          },
+          "tz_id": {
+            "type": "string",
+            "example": "America/New_York"
+          },
+          "localtime_epoch": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1658522976
+          },
+          "localtime": {
+            "type": "string",
+            "example": "2022-07-22 16:49"
+          }
+        }
+      },
+      "current": {
+        "type": "object",
+        "properties": {
+          "last_updated_epoch": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1658522700
+          },
+          "last_updated": {
+            "type": "string",
+            "example": "2022-07-22 16:45"
+          },
+          "temp_c": {
+            "type": "number",
+            "example": 34.4
+          },
+          "temp_f": {
+            "type": "number",
+            "example": 93.9
+          },
+          "is_day": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1
+          },
+          "condition": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "example": "Partly cloudy"
+              },
+              "icon": {
+                "type": "string",
+                "example": "//cdn.weatherapi.com/weather/64x64/day/116.png"
+              },
+              "code": {
+                "type": "integer",
+                "format": "int32",
+                "example": 1003
+              }
+            }
+          },
+          "wind_mph": {
+            "type": "number",
+            "example": 16.1
+          },
+          "wind_kph": {
+            "type": "number",
+            "example": 25.9
+          },
+          "wind_degree": {
+            "type": "integer",
+            "format": "int32",
+            "example": 180
+          },
+          "wind_dir": {
+            "type": "string",
+            "example": "S"
+          },
+          "pressure_mb": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1011
+          },
+          "pressure_in": {
+            "type": "number",
+            "example": 29.85
+          },
+          "precip_mm": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0
+          },
+          "precip_in": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0
+          },
+          "humidity": {
+            "type": "integer",
+            "format": "int32",
+            "example": 31
+          },
+          "cloud": {
+            "type": "integer",
+            "format": "int32",
+            "example": 75
+          },
+          "feelslike_c": {
+            "type": "integer",
+            "format": "int32",
+            "example": 37
+          },
+          "feelslike_f": {
+            "type": "number",
+            "example": 98.6
+          },
+          "vis_km": {
+            "type": "integer",
+            "format": "int32",
+            "example": 16
+          },
+          "vis_miles": {
+            "type": "integer",
+            "format": "int32",
+            "example": 9
+          },
+          "uv": {
+            "type": "integer",
+            "format": "int32",
+            "example": 8
+          },
+          "gust_mph": {
+            "type": "number",
+            "example": 11.6
+          },
+          "gust_kph": {
+            "type": "number",
+            "example": 18.7
+          },
+          "air_quality": {
+            "type": "object",
+            "properties": {
+              "co": {
+                "type": "number",
+                "example": 293.70001220703125
+              },
+              "no2": {
+                "type": "number",
+                "example": 18.5
+              },
+              "o3": {
+                "type": "number",
+                "example": 234.60000610351562
+              },
+              "so2": {
+                "type": "integer",
+                "format": "int32",
+                "example": 12
+              },
+              "pm2_5": {
+                "type": "number",
+                "example": 13.600000381469727
+              },
+              "pm10": {
+                "type": "integer",
+                "format": "int32",
+                "example": 15
+              },
+              "us-epa-index": {
+                "type": "integer",
+                "format": "int32",
+                "example": 1
+              },
+              "gb-defra-index": {
+                "type": "integer",
+                "format": "int32",
+                "example": 2
+              }
+            }
+          }
+        }
+      },
+      "forecast": {
+        "type": "object",
+        "properties": {
+          "forecastday": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2022-07-22"
+                },
+                "date_epoch": {
+                  "type": "integer",
+                  "format": "int32",
+                  "example": 1658448000
+                },
+                "day": {
+                  "type": "object",
+                  "properties": {
+                    "maxtemp_c": {
+                      "type": "number",
+                      "example": 35.9
+                    },
+                    "maxtemp_f": {
+                      "type": "number",
+                      "example": 96.6
+                    },
+                    "mintemp_c": {
+                      "type": "number",
+                      "example": 26.3
+                    },
+                    "mintemp_f": {
+                      "type": "number",
+                      "example": 79.3
+                    },
+                    "avgtemp_c": {
+                      "type": "number",
+                      "example": 30.7
+                    },
+                    "avgtemp_f": {
+                      "type": "number",
+                      "example": 87.3
+                    },
+                    "maxwind_mph": {
+                      "type": "number",
+                      "example": 12.8
+                    },
+                    "maxwind_kph": {
+                      "type": "number",
+                      "example": 20.5
+                    },
+                    "totalprecip_mm": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "totalprecip_in": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "avgvis_km": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 10
+                    },
+                    "avgvis_miles": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 6
+                    },
+                    "avghumidity": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 53
+                    },
+                    "daily_will_it_rain": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "daily_chance_of_rain": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "daily_will_it_snow": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "daily_chance_of_snow": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "condition": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string",
+                          "example": "Sunny"
+                        },
+                        "icon": {
+                          "type": "string",
+                          "example": "//cdn.weatherapi.com/weather/64x64/day/113.png"
+                        },
+                        "code": {
+                          "type": "integer",
+                          "format": "int32",
+                          "example": 1000
+                        }
+                      }
+                    },
+                    "uv": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 8
+                    }
+                  }
+                },
+                "astro": {
+                  "type": "object",
+                  "properties": {
+                    "sunrise": {
+                      "type": "string",
+                      "example": "05:44 AM"
+                    },
+                    "sunset": {
+                      "type": "string",
+                      "example": "08:20 PM"
+                    },
+                    "moonrise": {
+                      "type": "string",
+                      "example": "12:58 AM"
+                    },
+                    "moonset": {
+                      "type": "string",
+                      "example": "03:35 PM"
+                    },
+                    "moon_phase": {
+                      "type": "string",
+                      "example": "Last Quarter"
+                    },
+                    "moon_illumination": {
+                      "type": "string",
+                      "example": "42"
+                    }
+                  }
+                },
+                "hour": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "time_epoch": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1658462400
+                      },
+                      "time": {
+                        "type": "string",
+                        "example": "2022-07-22 00:00"
+                      },
+                      "temp_c": {
+                        "type": "number",
+                        "example": 28.7
+                      },
+                      "temp_f": {
+                        "type": "number",
+                        "example": 83.7
+                      },
+                      "is_day": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "condition": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "example": "Clear"
+                          },
+                          "icon": {
+                            "type": "string",
+                            "example": "//cdn.weatherapi.com/weather/64x64/night/113.png"
+                          },
+                          "code": {
+                            "type": "integer",
+                            "format": "int32",
+                            "example": 1000
+                          }
+                        }
+                      },
+                      "wind_mph": {
+                        "type": "number",
+                        "example": 9.4
+                      },
+                      "wind_kph": {
+                        "type": "number",
+                        "example": 15.1
+                      },
+                      "wind_degree": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 265
+                      },
+                      "wind_dir": {
+                        "type": "string",
+                        "example": "W"
+                      },
+                      "pressure_mb": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1007
+                      },
+                      "pressure_in": {
+                        "type": "number",
+                        "example": 29.73
+                      },
+                      "precip_mm": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "precip_in": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "humidity": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 58
+                      },
+                      "cloud": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 19
+                      },
+                      "feelslike_c": {
+                        "type": "number",
+                        "example": 30.5
+                      },
+                      "feelslike_f": {
+                        "type": "number",
+                        "example": 86.9
+                      },
+                      "windchill_c": {
+                        "type": "number",
+                        "example": 28.7
+                      },
+                      "windchill_f": {
+                        "type": "number",
+                        "example": 83.7
+                      },
+                      "heatindex_c": {
+                        "type": "number",
+                        "example": 30.5
+                      },
+                      "heatindex_f": {
+                        "type": "number",
+                        "example": 86.9
+                      },
+                      "dewpoint_c": {
+                        "type": "number",
+                        "example": 19.6
+                      },
+                      "dewpoint_f": {
+                        "type": "number",
+                        "example": 67.3
+                      },
+                      "will_it_rain": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "chance_of_rain": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "will_it_snow": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "chance_of_snow": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "vis_km": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 10
+                      },
+                      "vis_miles": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 6
+                      },
+                      "gust_mph": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 15
+                      },
+                      "gust_kph": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "uv": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "marine": {
+        "type": "object",
+        "properties": {
+          "forecastday": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2022-07-22"
+                },
+                "date_epoch": {
+                  "type": "integer",
+                  "format": "int32",
+                  "example": 1658448000
+                },
+                "day": {
+                  "type": "object",
+                  "properties": {
+                    "maxtemp_c": {
+                      "type": "number",
+                      "example": 35.9
+                    },
+                    "maxtemp_f": {
+                      "type": "number",
+                      "example": 96.6
+                    },
+                    "mintemp_c": {
+                      "type": "number",
+                      "example": 26.3
+                    },
+                    "mintemp_f": {
+                      "type": "number",
+                      "example": 79.3
+                    },
+                    "avgtemp_c": {
+                      "type": "number",
+                      "example": 30.7
+                    },
+                    "avgtemp_f": {
+                      "type": "number",
+                      "example": 87.3
+                    },
+                    "maxwind_mph": {
+                      "type": "number",
+                      "example": 12.8
+                    },
+                    "maxwind_kph": {
+                      "type": "number",
+                      "example": 20.5
+                    },
+                    "totalprecip_mm": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "totalprecip_in": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "avgvis_km": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 10
+                    },
+                    "avgvis_miles": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 6
+                    },
+                    "avghumidity": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 53
+                    },
+                    "daily_will_it_rain": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "daily_chance_of_rain": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "daily_will_it_snow": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "daily_chance_of_snow": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 0
+                    },
+                    "condition": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string",
+                          "example": "Sunny"
+                        },
+                        "icon": {
+                          "type": "string",
+                          "example": "//cdn.weatherapi.com/weather/64x64/day/113.png"
+                        },
+                        "code": {
+                          "type": "integer",
+                          "format": "int32",
+                          "example": 1000
+                        }
+                      }
+                    },
+                    "uv": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 8
+                    }
+                  }
+                },
+                "astro": {
+                  "type": "object",
+                  "properties": {
+                    "sunrise": {
+                      "type": "string",
+                      "example": "05:44 AM"
+                    },
+                    "sunset": {
+                      "type": "string",
+                      "example": "08:20 PM"
+                    },
+                    "moonrise": {
+                      "type": "string",
+                      "example": "12:58 AM"
+                    },
+                    "moonset": {
+                      "type": "string",
+                      "example": "03:35 PM"
+                    },
+                    "moon_phase": {
+                      "type": "string",
+                      "example": "Last Quarter"
+                    },
+                    "moon_illumination": {
+                      "type": "string",
+                      "example": "42"
+                    }
+                  }
+                },
+                "hour": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "time_epoch": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1658462400
+                      },
+                      "time": {
+                        "type": "string",
+                        "example": "2022-07-22 00:00"
+                      },
+                      "temp_c": {
+                        "type": "number",
+                        "example": 28.7
+                      },
+                      "temp_f": {
+                        "type": "number",
+                        "example": 83.7
+                      },
+                      "is_day": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "condition": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "example": "Clear"
+                          },
+                          "icon": {
+                            "type": "string",
+                            "example": "//cdn.weatherapi.com/weather/64x64/night/113.png"
+                          },
+                          "code": {
+                            "type": "integer",
+                            "format": "int32",
+                            "example": 1000
+                          }
+                        }
+                      },
+                      "wind_mph": {
+                        "type": "number",
+                        "example": 9.4
+                      },
+                      "wind_kph": {
+                        "type": "number",
+                        "example": 15.1
+                      },
+                      "wind_degree": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 265
+                      },
+                      "wind_dir": {
+                        "type": "string",
+                        "example": "W"
+                      },
+                      "pressure_mb": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1007
+                      },
+                      "pressure_in": {
+                        "type": "number",
+                        "example": 29.73
+                      },
+                      "precip_mm": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "precip_in": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "humidity": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 58
+                      },
+                      "cloud": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 19
+                      },
+                      "feelslike_c": {
+                        "type": "number",
+                        "example": 30.5
+                      },
+                      "feelslike_f": {
+                        "type": "number",
+                        "example": 86.9
+                      },
+                      "windchill_c": {
+                        "type": "number",
+                        "example": 28.7
+                      },
+                      "windchill_f": {
+                        "type": "number",
+                        "example": 83.7
+                      },
+                      "heatindex_c": {
+                        "type": "number",
+                        "example": 30.5
+                      },
+                      "heatindex_f": {
+                        "type": "number",
+                        "example": 86.9
+                      },
+                      "dewpoint_c": {
+                        "type": "number",
+                        "example": 19.6
+                      },
+                      "dewpoint_f": {
+                        "type": "number",
+                        "example": 67.3
+                      },
+                      "will_it_rain": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "chance_of_rain": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "will_it_snow": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "chance_of_snow": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                      },
+                      "vis_km": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 10
+                      },
+                      "vis_miles": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 6
+                      },
+                      "gust_mph": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 15
+                      },
+                      "gust_kph": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "sig_ht_mt": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "swell_ht_mt": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "swell_ht_ft": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "swell_dir": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "swell_dir_16_point": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "swell_period_secs": {
+                        "type": "number",
+                        "example": 24.1
+                      },
+                      "uv": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "alerts": {
+        "type": "object",
+        "properties": {
+          "alert": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "headline": {
+                  "type": "string",
+                  "example": "NWS New York City - Upton (Long Island and New York City)"
+                },
+                "msgtype": {
+                  "type": "string",
+                  "example": null
+                },
+                "severity": {
+                  "type": "string",
+                  "example": null
+                },
+                "urgency": {
+                  "type": "string",
+                  "example": null
+                },
+                "areas": {
+                  "type": "string",
+                  "example": null
+                },
+                "category": {
+                  "type": "string",
+                  "example": "Extreme temperature value"
+                },
+                "certainty": {
+                  "type": "string",
+                  "example": null
+                },
+                "event": {
+                  "type": "string",
+                  "example": "Heat Advisory"
+                },
+                "note": {
+                  "type": "string",
+                  "example": null
+                },
+                "effective": {
+                  "type": "string",
+                  "format": "date-time",
+                  "example": "2022-07-21T19:38:00.000Z"
+                },
+                "expires": {
+                  "type": "string",
+                  "format": "date-time",
+                  "example": "2022-07-25T00:00:00.000Z"
+                },
+                "desc": {
+                  "type": "string",
+                  "example": "...HEAT ADVISORY REMAINS IN EFFECT UNTIL 8 PM EDT SUNDAY... * WHAT...Heat index values up to 105. * WHERE...Eastern Passaic Hudson Western Bergen Western Essex Eastern Bergen and Eastern Essex Counties. * WHEN...Until 8 PM EDT Sunday. * IMPACTS...High temperatures and high humidity may cause heat illnesses to occur."
+                },
+                "instruction": {
+                  "type": "string",
+                  "example": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      "ip": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "example": "185.249.71.82"
+          },
+          "type": {
+            "type": "string",
+            "example": "ipv4"
+          },
+          "continent_code": {
+            "type": "string",
+            "example": "EU"
+          },
+          "continent_name": {
+            "type": "string",
+            "example": "Europe"
+          },
+          "country_code": {
+            "type": "string",
+            "example": "GB"
+          },
+          "country_name": {
+            "type": "string",
+            "example": "United Kingdom"
+          },
+          "is_eu": {
+            "type": "string",
+            "example": "false"
+          },
+          "geoname_id": {
+            "type": "integer",
+            "format": "int32",
+            "example": 2643743
+          },
+          "city": {
+            "type": "string",
+            "example": "London"
+          },
+          "region": {
+            "type": "string",
+            "example": null
+          },
+          "lat": {
+            "type": "number",
+            "example": 51.5264
+          },
+          "lon": {
+            "type": "number",
+            "example": -0.0841
+          },
+          "tz_id": {
+            "type": "string",
+            "example": "Europe/London"
+          },
+          "localtime_epoch": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1658520645
+          },
+          "localtime": {
+            "type": "string",
+            "example": "2022-07-22 21:10"
+          }
+        }
+      },
+      "astronomy": {
+        "type": "object",
+        "properties": {
+          "astro": {
+            "type": "object",
+            "properties": {
+              "sunrise": {
+                "type": "string",
+                "example": "05:10 AM"
+              },
+              "sunset": {
+                "type": "string",
+                "example": "09:03 PM"
+              },
+              "moonrise": {
+                "type": "string",
+                "example": "12:29 AM"
+              },
+              "moonset": {
+                "type": "string",
+                "example": "04:01 PM"
+              },
+              "moon_phase": {
+                "type": "string",
+                "example": "Third Quarter"
+              },
+              "moon_illumination": {
+                "type": "string",
+                "example": "42"
+              }
+            }
+          }
+        }
+      },
+      "error400": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1003
+          },
+          "message": {
+            "type": "string",
+            "example": "Parameter 'q' not provided."
+          }
+        }
+      },
+      "error401": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1002
+          },
+          "message": {
+            "type": "string",
+            "example": "API key not provided"
+          }
+        }
+      },
+      "error403": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 2007
+          },
+          "message": {
+            "type": "string",
+            "example": "API key has exceeded calls per month quota."
+          }
+        }
+      }
+    }
+  }
+}

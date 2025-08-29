@@ -1,0 +1,65 @@
+# Build artifacts
+bin/
+*.exe
+openapi-mcp
+openapitools
+
+# Go build cache
+.zig-cache
+
+# Log files
+*.log
+error
+error.txt
+output.log
+server.log
+
+# Temporary files
+tmp/
+*~
+*.tmp
+*.bak
+*.backup
+*.old
+
+# Environment and config files
+.env
+.env.*
+*.env
+config.json
+config.yaml
+config.yml
+*config*.local
+*config*.prod
+*config*.dev
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# Credentials and secrets
+*.key
+*.pem
+*.p12
+*.p8
+AUTH.md
+AI-OPTS.md
+CLAUDE.md
+RELEASE.md
+
+# Claude Code
+.claude

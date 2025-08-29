@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Integration - openapi-mcp Documentation</title>
+  <meta name="description" content="Learn how to integrate openapi-mcp with AI agents, LLMs, and automation tools.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html" class="active">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>AI Agent Integration</h1>
+        
+        <p class="lead">
+          openapi-mcp is designed with unique AI optimization features that make any OpenAPI-documented API truly accessible to AI coding agents, LLMs, and automation tools. This page explains these optimizations and how to integrate openapi-mcp with various AI agents and platforms.
+        </p>
+        
+        <h2>Unique AI Optimizations</h2>
+        <p>
+          openapi-mcp implements several unique features specifically designed to enhance AI agent interactions:
+        </p>
+        <ul>
+          <li><strong>Structured outputs</strong> - All responses include consistent format with type information, making parsing reliable across different APIs</li>
+          <li><strong>Rich schema information</strong> - Detailed parameter constraints and examples that enable agents to construct valid calls without prior knowledge of the API</li>
+          <li><strong>Actionable errors</strong> - Error responses include details and suggestions for resolution, allowing agents to self-correct without human intervention</li>
+          <li><strong>Self-describing API</strong> - The <code>describe</code> tool provides comprehensive, machine-readable documentation that agents can analyze</li>
+          <li><strong>Minimal verbosity</strong> - Default output is concise and focused on data, optimized for machine consumption rather than human readability</li>
+          <li><strong>Standardized confirmation</strong> - Consistent pattern for handling dangerous operations that integrates seamlessly with agent decision-making workflows</li>
+          <li><strong>Smart parameter handling</strong> - Automatic conversion between OpenAPI parameter types and MCP tool parameters, including proper handling of arrays, objects, and complex nested structures</li>
+          <li><strong>Contextual examples</strong> - Every tool includes context-aware examples based on the OpenAPI specification, giving agents concrete usage patterns</li>
+          <li><strong>Intelligent default values</strong> - Sensible defaults are provided whenever possible to simplify API usage</li>
+          <li><strong>Type-aware validation</strong> - Input validation that provides clear, actionable feedback on exactly what needs to be corrected</li>
+        </ul>
+        
+        <h2>Integration Patterns</h2>
+
+        <div class="card mb-4">
+          <h3>AI Code Editor Integration</h3>
+          <p>
+            Many AI code editors like Roo Code support MCP tools configuration. You can add openapi-mcp to your editor's configuration:
+          </p>
+          <pre><code class="language-json">{
+    "fastly": {
+        "command": "/opt/bin/openapi-mcp",
+        "args": [
+            "-api-key",
+            "YOUR_API_KEY",
+            "/opt/etc/openapi/fastly-openapi-mcp.yaml"
+        ]
+    }
+}</code></pre>
+          <p>
+            This configuration provides the AI assistant with direct access to the API. The assistant can discover and use API operations without additional setup.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Stdio Integration (Recommended)</h3>
+          <p>
+            The simplest and most reliable way to integrate openapi-mcp with AI agents is using stdio mode:
+          </p>
+          <pre><code class="language-bash">bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            In this mode, the AI agent can launch openapi-mcp as a subprocess and communicate with it via stdin/stdout using the MCP (Model Context Protocol) format.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>HTTP Integration</h3>
+          <p>
+            For web-based AI agents or when stdio isn't an option, openapi-mcp can run as an HTTP server:
+          </p>
+          <pre><code class="language-bash">bin/openapi-mcp --http=:8080 examples/fastly-openapi-mcp.yaml</code></pre>
+          <p>
+            The AI agent can then make HTTP requests to the MCP server at <code>http://localhost:8080</code>.
+          </p>
+        </div>
+        
+        <h2>Integration with Popular AI Platforms</h2>
+        
+        <div class="card mb-4">
+          <h3>OpenAI Function Calling</h3>
+          <p>
+            openapi-mcp's tool schemas can be converted to OpenAI function definitions for use with function calling capabilities:
+          </p>
+          <pre><code class="language-javascript">// Example of converting MCP tools to OpenAI functions
+const tools = await fetchMcpTools();
+const openAiFunctions = tools.map(tool => ({
+  type: "function",
+  function: {
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.inputSchema
+  }
+}));
+
+// Use with OpenAI API
+const response = await openai.chat.completions.create({
+  model: "gpt-4-0125-preview",
+  messages: [{ role: "user", content: "List all services" }],
+  tools: openAiFunctions,
+  tool_choice: "auto"
+});</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Anthropic Claude</h3>
+          <p>
+            openapi-mcp can be used with Anthropic Claude's tool use capability:
+          </p>
+          <pre><code class="language-javascript">// Example of using MCP tools with Claude
+const tools = await fetchMcpTools();
+const claudeTools = tools.map(tool => ({
+  name: tool.name,
+  description: tool.description,
+  input_schema: tool.inputSchema
+}));
+
+// Use with Claude API
+const response = await anthropic.messages.create({
+  model: "claude-3-opus-20240229",
+  messages: [{ role: "user", content: "List all services" }],
+  tools: claudeTools
+});</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>GitHub Copilot</h3>
+          <p>
+            For GitHub Copilot, you can use openapi-mcp as a subprocess that Copilot can interact with via commands:
+          </p>
+          <pre><code class="language-javascript">// Example Copilot plugin integration
+async function callMcpTool(toolName, args) {
+  const process = spawn('bin/mcp-client', ['bin/openapi-mcp', 'openapi.yaml']);
+  
+  // Send the command to the mcp-client
+  process.stdin.write(`call ${toolName} ${JSON.stringify(args)}\n`);
+  
+  // Read the response
+  const response = await new Promise((resolve) => {
+    let output = '';
+    process.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    process.stdout.on('end', () => {
+      resolve(output);
+    });
+  });
+  
+  return JSON.parse(response);
+}</code></pre>
+        </div>
+        
+        <h2>Tool Discovery for Agents</h2>
+        
+        <p>
+          AI agents need to discover the available tools and their capabilities. openapi-mcp provides several ways for agents to explore the API:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>List Available Tools</h3>
+          <p>
+            To get a list of all available tools:
+          </p>
+          <pre><code class="language-json">// Request
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+
+// Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": ["listServices", "createService", "getService", "updateService", "deleteService", ...]
+}</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Get Tool Schema</h3>
+          <p>
+            To get the schema for a specific tool:
+          </p>
+          <pre><code class="language-json">// Request
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/schema",
+  "params": { "name": "createService" }
+}
+
+// Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "name": "createService",
+    "description": "Creates a new service configuration.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the service."
+        },
+        "comment": {
+          "type": "string",
+          "description": "A freeform descriptive note."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["vcl", "wasm"],
+          "description": "The type of this service."
+        }
+      },
+      "required": ["name", "type"]
+    }
+  }
+}</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Get Complete API Documentation</h3>
+          <p>
+            To get comprehensive documentation for all tools:
+          </p>
+          <pre><code class="language-json">// Request
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": { "name": "describe", "arguments": {} }
+}
+
+// Response (truncated for brevity)
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "OutputFormat": "structured",
+    "OutputType": "json",
+    "type": "api_docs",
+    "tools": [
+      {
+        "name": "listServices",
+        "description": "Retrieves a list of all services configured in the user's account.",
+        "inputSchema": { /* schema details */ },
+        "outputSchema": { /* schema details */ },
+        "examples": [
+          {
+            "input": {},
+            "output": { /* example output */ }
+          }
+        ]
+      },
+      // Other tools...
+    ]
+  }
+}</code></pre>
+        </div>
+        
+        <h2>Handling Dangerous Operations</h2>
+        
+        <p>
+          For dangerous operations (PUT, POST, DELETE), openapi-mcp requires confirmation. AI agents should be designed to handle this confirmation workflow:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Confirmation Flow</h3>
+          <pre><code class="language-json">// Initial request
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "deleteService",
+    "arguments": {
+      "service_id": "SU1Z0isxPaozGVKXdv0eY"
+    }
+  }
+}
+
+// Confirmation request response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "OutputFormat": "structured",
+    "OutputType": "json",
+    "type": "confirmation_request",
+    "confirmation_required": true,
+    "message": "This action is irreversible. Proceed?",
+    "action": "delete_resource"
+  }
+}
+
+// Confirmation request with __confirmed
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "deleteService",
+    "arguments": {
+      "service_id": "SU1Z0isxPaozGVKXdv0eY",
+      "__confirmed": true
+    }
+  }
+}</code></pre>
+          <p>
+            AI agents should detect the <code>confirmation_request</code> response type and either:
+          </p>
+          <ul>
+            <li>Ask the user for confirmation before proceeding</li>
+            <li>Automatically confirm if they have permission to do so</li>
+            <li>Abort the operation if confirmation isn't possible</li>
+          </ul>
+        </div>
+        
+        <h2>Best Practices for AI Integration</h2>
+        
+        <div class="card mb-4">
+          <h3>1. Default to Agent-Friendly Output</h3>
+          <p>
+            Do not use the <code>--extended</code> flag for machine/agent/CI usage. The default output is minimal and agent-friendly.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>2. Use the describe Tool for Discovery</h3>
+          <p>
+            Always use the <code>describe</code> tool to get up-to-date schemas and examples, rather than hardcoding knowledge about the API.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>3. Handle Structured Errors</h3>
+          <p>
+            Design your agent to parse and respond to structured error responses:
+          </p>
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Invalid parameter",
+    "details": {
+      "field": "name",
+      "reason": "required field missing"
+    },
+    "suggestions": [
+      "Provide a name parameter"
+    ]
+  }
+}</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>4. Implement Proper Confirmation Handling</h3>
+          <p>
+            Build a robust confirmation workflow that respects the safety requirements of dangerous operations.
+          </p>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>5. Use Retry Logic for Transient Errors</h3>
+          <p>
+            Implement retry logic with backoff for network-related errors or rate limiting.
+          </p>
+        </div>
+        
+        <h2>Example: Complete AI Agent Integration</h2>
+        
+        <pre><code class="language-javascript">// Example of a complete AI agent integration in JavaScript
+async function setupMcpTools() {
+  // Start openapi-mcp as a subprocess
+  const mcpProcess = spawn('bin/openapi-mcp', ['examples/fastly-openapi-mcp.yaml']);
+  
+  // Use the describe tool to get all tool definitions
+  const toolDefs = await callMcpTool('describe', {});
+  
+  return {
+    process: mcpProcess,
+    tools: toolDefs.tools
+  };
+}
+
+async function callMcpTool(name, args, confirmed = false) {
+  // Construct the MCP request
+  const request = {
+    jsonrpc: "2.0",
+    id: Date.now(),
+    method: "tools/call",
+    params: {
+      name: name,
+      arguments: confirmed ? { ...args, __confirmed: true } : args
+    }
+  };
+  
+  // Send the request and get the response
+  const response = await sendMcpRequest(request);
+  
+  // Handle confirmation requests
+  if (response.result && response.result.type === "confirmation_request") {
+    const userConfirmed = await askUserForConfirmation(response.result.message);
+    
+    if (userConfirmed) {
+      return callMcpTool(name, args, true);
+    } else {
+      return { cancelled: true, message: "Operation cancelled by user" };
+    }
+  }
+  
+  return response.result;
+}
+
+// Example of an AI agent using the tools
+async function aiAgentWorkflow() {
+  const { tools } = await setupMcpTools();
+  
+  // List all services
+  const services = await callMcpTool('listServices', {});
+  
+  // Process the services and make decisions
+  for (const service of services.data) {
+    console.log(`Processing service: ${service.name}`);
+    
+    // Get service details
+    const details = await callMcpTool('getService', { service_id: service.id });
+    
+    // Make decisions based on the data
+    if (details.data.updated_at < olderThan30Days) {
+      console.log(`Service ${service.name} needs updating`);
+      
+      // This will trigger a confirmation workflow
+      const updateResult = await callMcpTool('updateService', {
+        service_id: service.id,
+        name: service.name,
+        comment: "Updated by AI agent"
+      });
+      
+      console.log(`Update result:`, updateResult);
+    }
+  }
+}</code></pre>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you understand how to integrate with AI agents, you can:
+        </p>
+        <ul>
+          <li>Learn about <a href="./output-structure.html">output structure</a></li>
+          <li>Explore <a href="./safety-features.html">safety features</a></li>
+          <li>See <a href="../examples/">more examples</a> of openapi-mcp in action</li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

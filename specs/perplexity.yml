@@ -1,0 +1,246 @@
+openapi: 3.0.1
+info:
+  title: Perplexity AI - Search Web / AI answer with citations
+  version: 1.0.0
+  
+servers:
+  - url: https://api.perplexity.ai/chat
+    description: Production Perplexity chat completions endpoint
+
+# Declare the bearer auth scheme
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PerplexityRequest:
+      type: object
+      required:
+        - question
+      properties:
+        model:
+          type: string
+          enum:
+            - sonar
+          description: >-
+            Fixed — clients cannot change this.
+        messages:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/SystemMessage'
+              - $ref: '#/components/schemas/UserMessage'
+        question:
+          type: string
+          description: >-
+            This property is here for OpenAPI but will be
+            converted into the “user” message below.
+      example:
+        model: sonar
+        question: How many stars are there in our galaxy?
+        messages:
+          - role: system
+            content: Be precise and concise.
+          - role: user
+            content: How many stars are there in our galaxy?
+
+    SystemMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+        content:
+          type: string
+          enum:
+            - Be precise and concise.
+
+    UserMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - user
+        content:
+          type: string
+
+
+    Resp2:
+      type: object
+      properties:
+        error:
+          type: boolean
+        response:
+          type: object
+          properties:
+            status:
+              type: integer
+            statusText:
+              type: string
+            headers:
+              type: object
+              properties:
+                date:
+                  type: string
+                content-type:
+                  type: string
+                transfer-encoding:
+                  type: string
+                connection:
+                  type: string
+                cf-cache-status:
+                  type: string
+                set-cookie:
+                  type: string
+                strict-transport-security:
+                  type: string
+                server:
+                  type: string
+                cf-ray:
+                  type: string
+            data:
+              type: object
+              properties:
+                id:
+                  type: string
+                model:
+                  type: string
+                created:
+                  type: integer
+                usage:
+                  type: object
+                  properties:
+                    prompt_tokens:
+                      type: integer
+                    completion_tokens:
+                      type: integer
+                    total_tokens:
+                      type: integer
+                    search_context_size:
+                      type: string
+                citations:
+                  type: array
+                  items:
+                    type: string
+                search_results:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      url:
+                        type: string
+                      date:
+                        type: string
+                      last_updated:
+                        type: string
+                object:
+                  type: string
+                choices:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: integer
+                      finish_reason:
+                        type: string
+                      message:
+                        type: object
+                        properties:
+                          role:
+                            type: string
+                          content:
+                            type: string
+
+paths:
+  /completions:
+    post:
+      operationId: createCompletion  
+      summary: Perplexity – answer a single question
+      # Require bearer token on this endpoint
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: |
+          Supply only your question; the model ("sonar") and system prompt
+          ("Be precise and concise.") are fixed server-side.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerplexityRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resp2'
+              example:
+                error: false
+                response:
+                  status: 200
+                  statusText: OK
+                  headers:
+                    date: Tue, 22 Jul 2025 10:00:00 GMT
+                    content-type: application/json
+                    transfer-encoding: chunked
+                    connection: keep-alive
+                    cf-cache-status: DYNAMIC
+                    set-cookie: __cfduid=...
+                    strict-transport-security: max-age=31536000; includeSubDomains; preload
+                    server: cloudflare
+                    cf-ray: 7aa1e9c88e123456-LHR
+                  data:
+                    id: 3322d25b-0393-4af5-a79b-144bc58c28ae
+                    model: sonar
+                    created: 1753194179
+                    usage:
+                      prompt_tokens: 10
+                      completion_tokens: 100
+                      total_tokens: 110
+                      search_context_size: low
+                    citations:
+                      - https://www.ck12.org/flexi/earth-science/sun/how-many-stars-are-in-our-solar-system/
+                      - https://www.esa.int/Science_Exploration/Space_Science/Herschel/How_many_stars_are_there_in_the_Universe
+                      - https://www.skyatnightmagazine.com/space-science/how-many-stars-in-our-solar-system
+                      - https://www.planetsforkids.org/how-many-stars-are-in-the-solar-system.html
+                      - https://en.wikipedia.org/wiki/Solar_System
+                    search_results:
+                      - title: How many stars are in our solar system? | CK-12 Foundation
+                        url: https://www.ck12.org/flexi/earth-science/sun/how-many-stars-are-in-our-solar-system/
+                        date: '2025-04-02'
+                        last_updated: '2025-05-21'
+                      - title: How many stars are there in the Universe? – European Space Agency
+                        url: https://www.esa.int/Science_Exploration/Space_Science/Herschel/How_many_stars_are_there_in_the_Universe
+                        date: '2020-06-01'
+                        last_updated: '2025-06-16'
+                      - title: How many stars are there in our Solar System?
+                        url: https://www.skyatnightmagazine.com/space-science/how-many-stars-in-our-solar-system
+                        date: '2024-08-16'
+                        last_updated: '2025-04-23'
+                      - title: How Many Stars are in the Solar System? – Planets for Kids
+                        url: https://www.planetsforkids.org/how-many-stars-are-in-the-solar-system.html
+                        date: '2019-06-11'
+                        last_updated: '2025-04-22'
+                      - title: Solar System – Wikipedia
+                        url: https://en.wikipedia.org/wiki/Solar_System
+                        date: '2001-11-07'
+                        last_updated: '2025-07-19'
+                    object: chat.completion
+                    choices:
+                      - index: 0
+                        finish_reason: stop
+                        message:
+                          role: assistant
+                          content: |-
+                            The **Solar System has only one star: the Sun**. It is the central star around which all the planets and other objects orbit[1][3][4]. Unlike some other star systems that may have two or more stars (binary or multiple star systems), our Solar System is unique in having just this single star[4].
+
+                            The Sun accounts for over 99.86% of the total mass of the Solar System, emphasizing its dominant role in the system's structure and dynamics[5].

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Usage - openapi-mcp Documentation</title>
+  <meta name="description" content="Advanced usage patterns and techniques for openapi-mcp, including extending functionality, customizing behavior, and optimizing performance.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html" class="active">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Advanced Usage</h1>
+        
+        <p class="lead">
+          This guide covers advanced usage patterns and techniques for openapi-mcp, including extending functionality, customizing behavior, and optimizing performance.
+        </p>
+        
+        <h2>Custom Response Processing</h2>
+        <p>
+          You can use the <code>--post-hook-cmd</code> flag to process responses with custom scripts or tools. This is useful for:
+        </p>
+        <ul>
+          <li>Transforming API responses into different formats</li>
+          <li>Filtering sensitive information from responses</li>
+          <li>Adding additional context or metadata to responses</li>
+          <li>Custom logging or analytics</li>
+        </ul>
+        
+        <div class="card mb-4">
+          <h3>Example: Response Transformation</h3>
+          <pre><code class="language-bash">bin/openapi-mcp --post-hook-cmd='./transform.sh' examples/api-spec.yaml</code></pre>
+          <p>
+            Where <code>transform.sh</code> could be a script that processes the JSON responses and applies custom transformations.
+          </p>
+        </div>
+        
+        <h2>Combining Multiple OpenAPI Specs</h2>
+        <p>
+          You can combine multiple OpenAPI specifications by first merging them and then using the merged spec with openapi-mcp:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Step 1: Merge Specs</h3>
+          <p>Use a tool like <code>swagger-merger</code> or <code>openapi-merge</code> to combine multiple specs:</p>
+          <pre><code class="language-bash">npx openapi-merge-cli --config merge-config.json</code></pre>
+          <p>Where <code>merge-config.json</code> contains:</p>
+          <pre><code class="language-json">{
+  "inputs": [
+    { "inputFile": "./specs/api1.yaml" },
+    { "inputFile": "./specs/api2.yaml" }
+  ],
+  "output": "./merged-api.yaml"
+}</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Step 2: Use the Merged Spec</h3>
+          <pre><code class="language-bash">bin/openapi-mcp ./merged-api.yaml</code></pre>
+        </div>
+        
+        <h2>Custom Authentication Flows</h2>
+        <p>
+          For APIs that require complex authentication flows (OAuth 2.0, etc.), you can implement custom logic:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>OAuth 2.0 with Token Refresh</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"time"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Create a token provider that handles OAuth token refresh
+	tokenProvider := func(ctx context.Context) (string, error) {
+		// Implement OAuth token acquisition/refresh logic here
+		// This could make a call to an OAuth token endpoint
+		return "refreshed-oauth-token", nil
+	}
+
+	// Set up custom HTTP headers for each request
+	httpHeaderProvider := func(ctx context.Context) (map[string]string, error) {
+		token, err := tokenProvider(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{
+			"Authorization": "Bearer " + token,
+		}, nil
+	}
+
+	// Create server options with the custom header provider
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithHTTPHeaderProvider(httpHeaderProvider),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Custom Error Handling</h2>
+        <p>
+          You can implement custom error handling to provide more context or alternative actions:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Custom Error Handler</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Custom error handler function
+	errorHandler := func(ctx context.Context, req *http.Request, err error) (interface{}, error) {
+		if err != nil {
+			// Log the error
+			log.Printf("API Error: %v", err)
+			
+			// Provide a user-friendly response
+			return map[string]interface{}{
+				"error": "An error occurred while processing your request.",
+				"suggestion": "Please check your parameters and try again.",
+				"details": fmt.Sprintf("%v", err),
+			}, nil
+		}
+		return nil, err
+	}
+
+	// Create server options with the custom error handler
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithErrorHandler(errorHandler),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Response Caching</h2>
+        <p>
+          For performance optimization, you can implement response caching for frequently accessed endpoints:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Simple Cache Implementation</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+type cacheEntry struct {
+	response interface{}
+	expiry   time.Time
+}
+
+func main() {
+	// Create a simple in-memory cache
+	cache := make(map[string]cacheEntry)
+	cacheMutex := &sync.RWMutex{}
+	cacheExpiry := 5 * time.Minute
+
+	// Custom HTTP transport wrapper for caching
+	httpTransportWrapper := func(next openapi2mcp.HTTPTransport) openapi2mcp.HTTPTransport {
+		return func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			// Only cache GET requests
+			if req.Method != http.MethodGet {
+				return next(ctx, req)
+			}
+
+			// Check if we have a cached response
+			cacheKey := req.URL.String()
+			cacheMutex.RLock()
+			entry, exists := cache[cacheKey]
+			cacheMutex.RUnlock()
+
+			// If we have a valid cache entry, return it
+			if exists && time.Now().Before(entry.expiry) {
+				// Create a response from the cached data
+				resp := &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+				}
+				resp.Header.Set("X-Cache", "HIT")
+				// Convert cached response to http.Response...
+				return resp, nil
+			}
+
+			// Otherwise, call the API
+			resp, err := next(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+
+			// Cache the response if successful
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				// Extract response body...
+				cacheMutex.Lock()
+				cache[cacheKey] = cacheEntry{
+					response: resp,
+					expiry:   time.Now().Add(cacheExpiry),
+				}
+				cacheMutex.Unlock()
+			}
+
+			return resp, nil
+		}
+	}
+
+	// Create server options with the transport wrapper
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithHTTPTransportWrapper(httpTransportWrapper),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Custom Parameter Validation</h2>
+        <p>
+          You can implement custom parameter validation logic beyond what's defined in the OpenAPI spec:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Advanced Parameter Validation</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"regexp"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Custom parameter validator
+	paramValidator := func(ctx context.Context, opID string, params json.RawMessage) error {
+		// Parse the parameters
+		var paramsMap map[string]interface{}
+		if err := json.Unmarshal(params, &paramsMap); err != nil {
+			return err
+		}
+
+		// Example: Validate email format
+		if email, ok := paramsMap["email"].(string); ok {
+			emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+			if !emailRegex.MatchString(email) {
+				return fmt.Errorf("invalid email format: %s", email)
+			}
+		}
+
+		// Example: Check for profanity in text fields
+		if text, ok := paramsMap["description"].(string); ok {
+			profanityList := []string{"badword1", "badword2", "badword3"}
+			for _, word := range profanityList {
+				if regexp.MustCompile(fmt.Sprintf(`(?i)\b%s\b`, word)).MatchString(text) {
+					return fmt.Errorf("description contains inappropriate language")
+				}
+			}
+		}
+
+		return nil
+	}
+
+	// Create server options with the parameter validator
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithParameterValidator(paramValidator),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Request Rate Limiting</h2>
+        <p>
+          To protect backend APIs, you can implement rate limiting:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Simple Rate Limiting</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Rate limiter setup
+	type rateLimiter struct {
+		lastRequest time.Time
+		tokens      int
+		mu          sync.Mutex
+	}
+
+	limiter := &rateLimiter{
+		tokens: 10, // Allow 10 requests initially
+	}
+
+	// Refill rate: 1 token per second
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			limiter.mu.Lock()
+			if limiter.tokens < 10 {
+				limiter.tokens++
+			}
+			limiter.mu.Unlock()
+		}
+	}()
+
+	// Custom HTTP transport wrapper for rate limiting
+	httpTransportWrapper := func(next openapi2mcp.HTTPTransport) openapi2mcp.HTTPTransport {
+		return func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			limiter.mu.Lock()
+			if limiter.tokens > 0 {
+				limiter.tokens--
+				limiter.lastRequest = time.Now()
+				limiter.mu.Unlock()
+				return next(ctx, req)
+			}
+			limiter.mu.Unlock()
+
+			// Return a rate limit error
+			return &http.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Header:     make(http.Header),
+				Body:       http.NoBody,
+			}, nil
+		}
+	}
+
+	// Create server options with the transport wrapper
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithHTTPTransportWrapper(httpTransportWrapper),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Webhooks and Server-Sent Events (SSE)</h2>
+        <p>
+          For APIs that support webhooks or Server-Sent Events, you can implement custom handling:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: SSE Event Handling</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Custom HTTP transport for SSE
+	sseTransport := func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		// Configure the request for SSE
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Cache-Control", "no-cache")
+		req.Header.Set("Connection", "keep-alive")
+
+		// Make the request
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		// Process SSE events
+		go func() {
+			scanner := bufio.NewScanner(resp.Body)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.HasPrefix(line, "data:") {
+					eventData := strings.TrimPrefix(line, "data:")
+					fmt.Printf("Received SSE event: %s\n", eventData)
+					// Process the event data
+					// ...
+				}
+			}
+			if err := scanner.Err(); err != nil {
+				log.Printf("SSE scanner error: %v", err)
+			}
+		}()
+
+		return resp, nil
+	}
+
+	// Create server options with the custom SSE transport
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithCustomTransport("sse", sseTransport),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Metrics and Monitoring</h2>
+        <p>
+          Implement metrics collection to monitor API usage:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Basic Metrics Collection</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Metrics data structure
+	type metrics struct {
+		requestCount      map[string]int
+		responseTimeTotal map[string]time.Duration
+		errorCount        map[string]int
+		mu                sync.Mutex
+	}
+
+	m := &metrics{
+		requestCount:      make(map[string]int),
+		responseTimeTotal: make(map[string]time.Duration),
+		errorCount:        make(map[string]int),
+	}
+
+	// Print metrics every 60 seconds
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			m.mu.Lock()
+			log.Println("API Metrics:")
+			for endpoint, count := range m.requestCount {
+				avgTime := time.Duration(0)
+				if count > 0 {
+					avgTime = m.responseTimeTotal[endpoint] / time.Duration(count)
+				}
+				log.Printf("  %s: %d requests, %v avg response time, %d errors\n",
+					endpoint, count, avgTime, m.errorCount[endpoint])
+			}
+			m.mu.Unlock()
+		}
+	}()
+
+	// Custom HTTP transport wrapper for metrics collection
+	httpTransportWrapper := func(next openapi2mcp.HTTPTransport) openapi2mcp.HTTPTransport {
+		return func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			endpoint := req.URL.Path
+			startTime := time.Now()
+
+			// Make the request
+			resp, err := next(ctx, req)
+
+			// Record metrics
+			duration := time.Since(startTime)
+			m.mu.Lock()
+			m.requestCount[endpoint]++
+			m.responseTimeTotal[endpoint] += duration
+			if err != nil || (resp != nil && resp.StatusCode >= 400) {
+				m.errorCount[endpoint]++
+			}
+			m.mu.Unlock()
+
+			return resp, err
+		}
+	}
+
+	// Create server options with the transport wrapper
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithHTTPTransportWrapper(httpTransportWrapper),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Context Propagation</h2>
+        <p>
+          Pass context values through the request chain for advanced use cases:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Request Tracing</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/google/uuid"
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+// Define context keys
+type contextKey string
+const traceIDKey contextKey = "trace-id"
+
+func main() {
+	// Middleware to add trace ID to context
+	traceMiddleware := func(next openapi2mcp.MCPHandler) openapi2mcp.MCPHandler {
+		return func(ctx context.Context, opID string, params []byte) (interface{}, error) {
+			// Generate a trace ID if not present
+			traceID, ok := ctx.Value(traceIDKey).(string)
+			if !ok {
+				traceID = uuid.New().String()
+				ctx = context.WithValue(ctx, traceIDKey, traceID)
+			}
+			
+			log.Printf("[TRACE %s] Operation: %s started", traceID, opID)
+			
+			// Call the next handler
+			start := time.Now()
+			result, err := next(ctx, opID, params)
+			duration := time.Since(start)
+			
+			if err != nil {
+				log.Printf("[TRACE %s] Operation: %s failed after %v: %v", traceID, opID, duration, err)
+			} else {
+				log.Printf("[TRACE %s] Operation: %s completed in %v", traceID, opID, duration)
+			}
+			
+			return result, err
+		}
+	}
+
+	// HTTP header provider to propagate trace ID
+	httpHeaderProvider := func(ctx context.Context) (map[string]string, error) {
+		headers := make(map[string]string)
+		
+		// Add trace ID to request headers if present in context
+		if traceID, ok := ctx.Value(traceIDKey).(string); ok {
+			headers["X-Trace-ID"] = traceID
+		}
+		
+		return headers, nil
+	}
+
+	// Create server options with the middleware and header provider
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithMiddleware(traceMiddleware),
+		openapi2mcp.WithHTTPHeaderProvider(httpHeaderProvider),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Optimizing for Large APIs</h2>
+        <p>
+          When working with very large OpenAPI specifications, consider these optimization techniques:
+        </p>
+        
+        <ul>
+          <li><strong>Tool Filtering:</strong> Use the <code>--tag</code>, <code>--include-desc-regex</code>, and <code>--exclude-desc-regex</code> flags to reduce the number of tools exposed.</li>
+          <li><strong>Lazy Loading:</strong> Implement lazy loading of schemas to reduce startup time.</li>
+          <li><strong>Schema Simplification:</strong> Preprocess the OpenAPI spec to simplify complex schemas.</li>
+          <li><strong>Response Streaming:</strong> Use streaming responses for large payloads.</li>
+        </ul>
+        
+        <div class="card mb-4">
+          <h3>Example: Optimized Tool Loading</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Custom tool filter
+	toolFilter := func(operationID, path, method string, tags []string) bool {
+		// Skip internal operations
+		if strings.HasPrefix(operationID, "internal") {
+			return false
+		}
+		
+		// Only include specific API versions
+		if strings.Contains(path, "/v1/") || strings.Contains(path, "/v2/") {
+			return true
+		}
+		
+		// Skip deprecated operations
+		for _, tag := range tags {
+			if tag == "deprecated" {
+				return false
+			}
+		}
+		
+		return true
+	}
+
+	// Create server options with the tool filter
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithToolFilter(toolFilter),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Custom API Key Management</h2>
+        <p>
+          Implement more advanced API key management for multiple services:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Example: Service-Specific API Keys</h3>
+          <pre><code class="language-go">package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/jedisct1/openapi-mcp/pkg/openapi2mcp"
+)
+
+func main() {
+	// Load API keys from environment variables
+	apiKeys := make(map[string]string)
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, "API_KEY_") {
+			parts := strings.SplitN(env, "=", 2)
+			if len(parts) == 2 {
+				service := strings.TrimPrefix(parts[0], "API_KEY_")
+				apiKeys[strings.ToLower(service)] = parts[1]
+			}
+		}
+	}
+
+	// Custom HTTP header provider for service-specific API keys
+	httpHeaderProvider := func(ctx context.Context) (map[string]string, error) {
+		headers := make(map[string]string)
+		
+		// Get the operation ID from context
+		opID, ok := ctx.Value(openapi2mcp.OpIDContextKey).(string)
+		if !ok {
+			return headers, nil
+		}
+		
+		// Determine which service this operation belongs to
+		var service string
+		if strings.HasPrefix(opID, "payments") {
+			service = "payment"
+		} else if strings.HasPrefix(opID, "users") {
+			service = "user"
+		} else if strings.HasPrefix(opID, "analytics") {
+			service = "analytics"
+		} else {
+			service = "default"
+		}
+		
+		// Add the appropriate API key
+		if apiKey, exists := apiKeys[service]; exists {
+			headers["X-API-Key"] = apiKey
+		} else if apiKey, exists := apiKeys["default"]; exists {
+			headers["X-API-Key"] = apiKey
+		} else {
+			return nil, fmt.Errorf("no API key found for service: %s", service)
+		}
+		
+		return headers, nil
+	}
+
+	// Create server options with the header provider
+	opts := []openapi2mcp.ServerOption{
+		openapi2mcp.WithHTTPHeaderProvider(httpHeaderProvider),
+	}
+
+	// Create and start the server with the options
+	server, err := openapi2mcp.NewServer(os.Args[1], opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.ServeStdio(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}</code></pre>
+        </div>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you've explored advanced usage patterns, you can:
+        </p>
+        <ul>
+          <li>Check out the <a href="../examples/">examples</a> directory for more implementation ideas</li>
+          <li>Review the <a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API reference</a> for all available options</li>
+          <li>Contribute improvements or bug fixes to the <a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub repository</a></li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

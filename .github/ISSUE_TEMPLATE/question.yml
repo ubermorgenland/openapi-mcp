@@ -1,0 +1,113 @@
+name: ❓ Question
+description: Ask a question about using openapi-mcp
+title: "[Question]: "
+labels: ["question", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using openapi-mcp? We're here to help! 
+        
+        **Note**: For general discussions and broader questions, consider using [GitHub Discussions](../../discussions) instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checks
+      description: Please verify these before asking
+      options:
+        - label: I have read the README and documentation
+          required: true
+        - label: I have searched existing issues and discussions
+          required: true
+        - label: This is a specific question, not a general discussion topic
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question Category
+      description: What area is your question about?
+      options:
+        - Getting started and installation
+        - OpenAPI specification compatibility
+        - Authentication and security setup
+        - Database integration and management
+        - HTTP vs stdio transport modes
+        - AI/LLM integration and usage
+        - Performance and optimization
+        - Deployment and operations
+        - Contributing and development
+        - Troubleshooting specific errors
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: |
+        Be as specific as possible. Include:
+        - What you're trying to achieve
+        - What you've already tried
+        - Where you're getting stuck
+        
+        Example: "I'm trying to use openapi-mcp with my company's internal API that uses custom JWT authentication. How can I configure the authentication to work with our JWT tokens that include custom claims?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and Environment
+      description: Provide relevant context about your setup
+      placeholder: |
+        Include details about:
+        - Your use case and goals
+        - Current setup and configuration
+        - Environment (Go version, OS, etc.)
+        - Related tools or frameworks you're using
+      
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What Have You Tried?
+      description: What approaches have you already attempted?
+      placeholder: |
+        Describe what you've tried so far:
+        - Commands you've run
+        - Configuration changes you've made  
+        - Documentation you've consulted
+        - Error messages you've encountered
+
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Expected Outcome
+      description: What result are you hoping to achieve?
+      placeholder: "What would success look like for your use case?"
+
+  - type: checkboxes
+    id: help-offer
+    attributes:
+      label: How You Can Help
+      description: How might you be able to contribute back?
+      options:
+        - label: I can test proposed solutions
+        - label: I can provide more detailed examples or use cases
+        - label: I can help improve documentation based on the answer
+        - label: I'm interested in contributing code if this becomes a feature
+        - label: I just need help and can't contribute right now (that's okay too!)
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Anything else that might be helpful
+      placeholder: |
+        - Links to relevant external documentation
+        - Similar tools or approaches you've seen
+        - Timeline or urgency considerations
+        - Related community discussions

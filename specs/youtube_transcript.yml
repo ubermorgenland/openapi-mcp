@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  title: YouTube Transcript RapidAPI
+  version: 1.0.0
+  description: |
+    A simple API for retrieving YouTube video transcripts via RapidAPI’s
+    youtube-transcript3 endpoint.
+servers:
+  - url: https://youtube-transcript3.p.rapidapi.com
+components:
+  securitySchemes:
+    RapidAPIKey:
+      type: apiKey
+      in: header
+      name: x-rapidapi-key
+      description: Your RapidAPI key.
+  parameters:
+    RapidAPIHostHeader:
+      name: x-rapidapi-host
+      in: header
+      required: true
+      schema:
+        type: string
+        example: youtube-transcript3.p.rapidapi.com
+      description: The RapidAPI host for the YouTube Transcript service.
+  schemas:
+    TranscriptItem:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Caption text chunk.
+        duration:
+          type: number
+          description: Duration of this chunk in seconds.
+        offset:
+          type: number
+          description: Offset (in seconds) from start of video.
+        lang:
+          type: string
+          description: Language code of this caption chunk.
+      required:
+        - text
+        - duration
+        - offset
+        - lang
+
+    TranscriptResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates whether the request succeeded.
+        transcript:
+          type: array
+          items:
+            $ref: '#/components/schemas/TranscriptItem'
+      required:
+        - success
+        - transcript
+
+    TranscriptWithUrlResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates whether the request succeeded.
+        transcript:
+          type: string
+          description: Full transcript as a single flat text string.
+      required:
+        - success
+        - transcript
+
+paths:
+  /api/transcript:
+    get:
+      summary: Get transcript by video ID
+      description: |
+        Returns an array of transcript items (with text, duration, offset, lang)
+        for the given YouTube video ID.
+      parameters:
+        - name: videoId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The YouTube video ID.
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
+      security:
+        - RapidAPIKey: []
+      responses:
+        '200':
+          description: A JSON object containing the transcript array.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptResponse'
+        '400':
+          description: Bad request (e.g., missing or invalid videoId).
+        '401':
+          description: Unauthorized (invalid or missing API key).
+        '404':
+          description: Video not found or no captions available.
+
+  /api/transcript-with-url:
+    get:
+      summary: Get flat-text transcript by URL
+      description: |
+        Returns the full transcript as a flat string for a YouTube URL,
+        with optional language filtering.
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: The full YouTube watch URL (URL-encoded).
+        - name: flat_text
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Whether to return the transcript as a single flat string.
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Language code (e.g., "en").
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
+      security:
+        - RapidAPIKey: []
+      responses:
+        '200':
+          description: A JSON object containing the flat-text transcript.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptWithUrlResponse'
+        '400':
+          description: Bad request (e.g., malformed URL).
+        '401':
+          description: Unauthorized (invalid or missing API key).
+        '404':
+          description: Video not found or no captions available.

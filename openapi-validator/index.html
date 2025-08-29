@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAPI Validator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 OpenAPI Validator</h1>
+            <p>Validate and lint your OpenAPI specifications with detailed feedback</p>
+        </header>
+
+        <main>
+            <!-- Configuration Section -->
+            <section class="config-section">
+                <h2>Configuration</h2>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="server-url">Validation Server URL:</label>
+                        <input type="url" id="server-url" value="http://localhost:8080" 
+                               placeholder="http://localhost:8080">
+                    </div>
+                    <div class="config-item">
+                        <label for="validation-mode">Validation Mode:</label>
+                        <select id="validation-mode">
+                            <option value="validate">Validate (Critical Issues Only)</option>
+                            <option value="lint">Lint (Comprehensive Analysis)</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="test-connection" class="btn btn-secondary">Test Connection</button>
+                <div id="connection-status" class="status-indicator"></div>
+            </section>
+
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <h2>Upload OpenAPI Specification</h2>
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-content">
+                        <div class="upload-icon">📄</div>
+                        <p>Drag and drop your OpenAPI file here</p>
+                        <p class="upload-subtitle">or click to browse</p>
+                        <input type="file" id="file-input" accept=".json,.yaml,.yml" hidden>
+                    </div>
+                </div>
+                <div class="file-info" id="file-info" style="display: none;">
+                    <div class="file-details">
+                        <span class="file-name" id="file-name"></span>
+                        <span class="file-size" id="file-size"></span>
+                    </div>
+                    <button id="clear-file" class="btn btn-text">Clear</button>
+                </div>
+            </section>
+
+            <!-- Text Input Alternative -->
+            <section class="text-input-section">
+                <h2>Or Paste OpenAPI Specification</h2>
+                <textarea id="spec-input" placeholder="Paste your OpenAPI specification here (YAML or JSON)..."></textarea>
+                <div class="text-actions">
+                    <button id="load-example" class="btn btn-secondary">Load Example</button>
+                    <button id="clear-text" class="btn btn-text">Clear</button>
+                </div>
+            </section>
+
+            <!-- Actions -->
+            <section class="actions-section">
+                <button id="validate-btn" class="btn btn-primary" disabled>
+                    <span class="btn-text">Validate</span>
+                    <span class="btn-spinner" style="display: none;">⟳</span>
+                </button>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="results-section" style="display: none;">
+                <h2>Validation Results</h2>
+                <div class="results-header">
+                    <div class="results-summary" id="results-summary"></div>
+                    <div class="results-actions">
+                        <button id="export-results" class="btn btn-secondary">Export Results</button>
+                    </div>
+                </div>
+                <div class="results-content" id="results-content"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Powered by <a href="https://github.com/jedisct1/openapi-mcp" target="_blank">openapi-mcp</a></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

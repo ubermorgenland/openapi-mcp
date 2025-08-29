@@ -1,0 +1,663 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "OpenAPI Spec Management API",
+    "description": "REST API for managing OpenAPI specifications in the database",
+    "version": "1.0.0",
+    "contact": {
+      "name": "OpenAPI MCP",
+      "url": "https://github.com/ubermorgenland/openapi-mcp"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Integrated MCP and Spec Management server"
+    }
+  ],
+  "paths": {
+    "/specs": {
+      "get": {
+        "summary": "List all OpenAPI specs",
+        "description": "Retrieve all OpenAPI specifications stored in the database",
+        "operationId": "listSpecs",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved specs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Specs retrieved successfully",
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "weather",
+                      "title": "OpenWeatherMap API",
+                      "version": "2.5",
+                      "endpoint_path": "/weather",
+                      "file_format": "json",
+                      "file_size": 65561,
+                      "api_key_token": "your_api_token_here",
+                      "is_active": true,
+                      "created_at": "2024-08-27T10:30:00Z",
+                      "updated_at": "2024-08-27T10:30:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create/import new OpenAPI spec",
+        "description": "Import a new OpenAPI specification into the database",
+        "operationId": "createSpec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportSpecRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spec imported successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Spec imported successfully",
+                  "data": {
+                    "name": "weather-api",
+                    "endpoint_path": "/weather",
+                    "active": true,
+                    "has_api_token": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/specs/active": {
+      "get": {
+        "summary": "List active OpenAPI specs",
+        "description": "Retrieve only active OpenAPI specifications",
+        "operationId": "listActiveSpecs",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved active specs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/specs/{id}": {
+      "get": {
+        "summary": "Get OpenAPI spec by ID",
+        "description": "Retrieve a specific OpenAPI specification by its ID",
+        "operationId": "getSpec",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SpecId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spec retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "501": {
+            "$ref": "#/components/responses/NotImplemented"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update OpenAPI spec",
+        "description": "Update an existing OpenAPI specification",
+        "operationId": "updateSpec",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SpecId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSpecRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spec updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "501": {
+            "$ref": "#/components/responses/NotImplemented"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete OpenAPI spec",
+        "description": "Permanently delete an OpenAPI specification",
+        "operationId": "deleteSpec",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SpecId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spec deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Spec deleted successfully",
+                  "data": {
+                    "id": 2
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/specs/{id}/activate": {
+      "post": {
+        "summary": "Activate OpenAPI spec",
+        "description": "Activate a specific OpenAPI specification",
+        "operationId": "activateSpec",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SpecId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spec activated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Spec activated successfully",
+                  "data": {
+                    "id": 2
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/specs/{id}/deactivate": {
+      "post": {
+        "summary": "Deactivate OpenAPI spec",
+        "description": "Deactivate a specific OpenAPI specification",
+        "operationId": "deactivateSpec",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SpecId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spec deactivated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Spec deactivated successfully",
+                  "data": {
+                    "id": 2
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/specs/{id}/token": {
+      "put": {
+        "summary": "Update API key token",
+        "description": "Set or clear the API key token for a specific OpenAPI specification",
+        "operationId": "updateApiKeyToken",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SpecId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "API key token updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "API key token updated successfully",
+                  "data": {
+                    "id": 1,
+                    "api_key_token_updated": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Check if the API server is running and healthy",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/swagger": {
+      "get": {
+        "summary": "Get OpenAPI specification",
+        "description": "Returns the OpenAPI specification for this API",
+        "operationId": "getSwagger",
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "OpenAPI 3.0 specification"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "SpecId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The ID of the OpenAPI specification",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "example": 1
+        }
+      }
+    },
+    "schemas": {
+      "OpenAPISpec": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name",
+            "example": "weather"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "Title from OpenAPI spec",
+            "example": "OpenWeatherMap API"
+          },
+          "version": {
+            "type": "string",
+            "nullable": true,
+            "description": "Version from OpenAPI spec",
+            "example": "2.5"
+          },
+          "spec_content": {
+            "type": "string",
+            "description": "Raw OpenAPI specification content"
+          },
+          "endpoint_path": {
+            "type": "string",
+            "description": "Endpoint path for MCP server",
+            "example": "/weather"
+          },
+          "file_format": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["json", "yaml"],
+            "description": "Format of the specification",
+            "example": "json"
+          },
+          "file_size": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Size of specification in bytes",
+            "example": 65561
+          },
+          "api_key_token": {
+            "type": "string",
+            "nullable": true,
+            "description": "API key token for this specification",
+            "example": "your_api_token_here"
+          },
+          "is_active": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the spec is active",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp",
+            "example": "2024-08-27T10:30:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp",
+            "example": "2024-08-27T10:30:00Z"
+          }
+        }
+      },
+      "ImportSpecRequest": {
+        "type": "object",
+        "required": ["name", "endpoint_path", "spec_content"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name for the spec",
+            "example": "petstore"
+          },
+          "endpoint_path": {
+            "type": "string",
+            "description": "Endpoint path for MCP server",
+            "example": "/petstore"
+          },
+          "spec_content": {
+            "type": "string",
+            "description": "Raw OpenAPI specification content (JSON or YAML)"
+          },
+          "file_format": {
+            "type": "string",
+            "enum": ["json", "yaml"],
+            "description": "Format of the specification (auto-detected if not provided)",
+            "example": "json"
+          },
+          "api_key_token": {
+            "type": "string",
+            "description": "API key token for this specification",
+            "example": "pk-petstore-abc123xyz789"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether the spec should be active (defaults to true)",
+            "example": true
+          }
+        }
+      },
+      "UpdateSpecRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name for the spec"
+          },
+          "endpoint_path": {
+            "type": "string",
+            "description": "Endpoint path for MCP server"
+          },
+          "spec_content": {
+            "type": "string",
+            "description": "Raw OpenAPI specification content"
+          },
+          "file_format": {
+            "type": "string",
+            "enum": ["json", "yaml"],
+            "description": "Format of the specification"
+          },
+          "api_key_token": {
+            "type": "string",
+            "description": "API key token for this specification"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether the spec should be active"
+          }
+        }
+      },
+      "UpdateTokenRequest": {
+        "type": "object",
+        "required": ["api_key_token"],
+        "properties": {
+          "api_key_token": {
+            "type": "string",
+            "nullable": true,
+            "description": "API key token (null to clear)",
+            "example": "your_new_api_token_here"
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "description": "Response data (varies by endpoint)"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "message": {
+            "type": "string",
+            "example": "Name is required"
+          },
+          "code": {
+            "type": "integer",
+            "example": 400
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Bad Request",
+              "message": "Name is required",
+              "code": 400
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Not Found",
+              "message": "Spec with ID 999 not found",
+              "code": 404
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Internal Server Error",
+              "message": "Failed to retrieve specs",
+              "code": 500
+            }
+          }
+        }
+      },
+      "NotImplemented": {
+        "description": "Feature not implemented",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Not Implemented",
+              "message": "Get spec by ID not implemented yet",
+              "code": 501
+            }
+          }
+        }
+      }
+    }
+  }
+}

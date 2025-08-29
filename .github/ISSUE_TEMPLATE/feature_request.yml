@@ -1,0 +1,154 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide details to help us understand your needs and evaluate the request.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checks
+      description: Please verify these before submitting
+      options:
+        - label: I have searched existing issues to ensure this isn't already requested
+          required: true
+        - label: I have checked the documentation to see if this feature already exists
+          required: true
+        - label: This feature request is specific and actionable
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - OpenAPI/JSON Schema support
+        - Authentication and security
+        - Database integration
+        - HTTP/Transport layer
+        - CLI tools and usability
+        - Documentation and examples
+        - Performance and optimization
+        - Testing and validation
+        - AI/LLM integration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Describe the pain point or limitation you're experiencing.
+        
+        Example: "Currently, openapi-mcp doesn't support OpenAPI 3.1 webhooks, which means I can't expose webhook endpoints as MCP tools for my event-driven API."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this feature to work?
+      placeholder: |
+        Describe your ideal solution and how you envision using it.
+        
+        Example: "Add support for OpenAPI 3.1 webhook operations by:
+        1. Parsing webhook definitions from the spec
+        2. Creating MCP tools that can register webhook endpoints
+        3. Handling webhook payload validation and routing"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions?
+      placeholder: |
+        Describe other ways you've considered solving this problem.
+        
+        Example: "I considered using a separate webhook server, but that would require additional infrastructure and wouldn't integrate with the MCP tool ecosystem."
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: How would you and others use this feature?
+      placeholder: |
+        Describe specific scenarios where this feature would be valuable.
+        
+        Example use cases:
+        - Integration with GitHub webhooks for CI/CD automation
+        - Slack app development with event handling
+        - Real-time data processing pipelines
+    validations:
+      required: true
+
+  - type: textarea
+    id: example-usage
+    attributes:
+      label: Example Usage
+      description: Show how you would use this feature
+      render: shell
+      placeholder: |
+        # Example of how the feature would be used
+        bin/openapi-mcp --enable-webhooks examples/github-webhooks.yaml
+        
+        # Or in code:
+        # server := openapi2mcp.NewServer("github", "1.0", doc)
+        # server.EnableWebhooks("/webhooks")
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - "Low - Nice to have"
+        - "Medium - Would improve my workflow"
+        - "High - Blocking my use case"
+        - "Critical - Project depends on this"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Implementation Complexity (if known)
+      description: How complex do you think this feature would be to implement?
+      options:
+        - "Simple - Small change or addition"
+        - "Medium - Moderate development effort"
+        - "Complex - Significant development effort"
+        - "Unknown - Not sure about complexity"
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution Interest
+      description: Would you be interested in contributing to this feature?
+      options:
+        - label: I'd like to work on implementing this feature
+        - label: I can help with testing and feedback
+        - label: I can contribute documentation or examples
+        - label: I'm interested but need guidance on how to help
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that would be helpful
+      placeholder: |
+        - Related projects or standards
+        - References to documentation
+        - Similar features in other tools
+        - Timeline constraints
+        - Budget or resource considerations

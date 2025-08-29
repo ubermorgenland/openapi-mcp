@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Output Structure - openapi-mcp Documentation</title>
+  <meta name="description" content="Learn about the structure of outputs from openapi-mcp and how to process them.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html" class="active">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Output Structure</h1>
+        
+        <p class="lead">
+          openapi-mcp provides consistent, well-structured outputs that are designed to be machine-readable and easy to process. This page explains the structure of different types of outputs and how to handle them.
+        </p>
+        
+        <h2>Common Output Fields</h2>
+        <p>
+          All tool results include the following common fields:
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Output Format Metadata</h3>
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",  // "structured" or "unstructured"
+  "OutputType": "json",          // "json", "text", etc.
+  "type": "api_response",        // Response type identifier
+  // ...other fields depend on the response type
+}</code></pre>
+          <p>
+            These fields help clients understand how to parse and process the response:
+          </p>
+          <ul>
+            <li><code>OutputFormat</code>: Indicates whether the response has a structured format (JSON) or unstructured format (plain text)</li>
+            <li><code>OutputType</code>: Specifies the content type of the response</li>
+            <li><code>type</code>: Identifies the specific type of response (e.g., "api_response", "error", "confirmation_request")</li>
+          </ul>
+        </div>
+        
+        <h2>API Response Structure</h2>
+        <p>
+          When a tool call succeeds, it returns an API response with the following structure:
+        </p>
+        
+        <div class="card mb-4">
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "api_response",
+  "data": {
+    // API-specific response data
+  },
+  "metadata": {
+    "status_code": 200,
+    "headers": {
+      // Response headers from the API
+    }
+  }
+}</code></pre>
+          <p>
+            The <code>data</code> field contains the actual API response, which varies depending on the operation. The <code>metadata</code> field provides information about the HTTP response, including status code and headers.
+          </p>
+        </div>
+        
+        <h2>Error Response Structure</h2>
+        <p>
+          When a tool call fails, it returns an error response with details about what went wrong:
+        </p>
+        
+        <div class="card mb-4">
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Invalid parameter",
+    "details": {
+      "field": "name",
+      "reason": "required field missing"
+    },
+    "suggestions": [
+      "Provide a name parameter"
+    ]
+  }
+}</code></pre>
+          <p>
+            The error response includes:
+          </p>
+          <ul>
+            <li><code>code</code>: A machine-readable error code</li>
+            <li><code>message</code>: A human-readable error message</li>
+            <li><code>details</code>: Additional information about the error</li>
+            <li><code>suggestions</code>: Recommended actions to resolve the error</li>
+          </ul>
+        </div>
+        
+        <h2>Common Error Codes</h2>
+        <p>
+          openapi-mcp returns standardized error codes to help clients handle errors consistently:
+        </p>
+        
+        <table class="mb-4">
+          <thead>
+            <tr>
+              <th>Error Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>validation_error</code></td>
+              <td>Invalid input parameters</td>
+            </tr>
+            <tr>
+              <td><code>authentication_error</code></td>
+              <td>Authentication failed</td>
+            </tr>
+            <tr>
+              <td><code>authorization_error</code></td>
+              <td>Insufficient permissions</td>
+            </tr>
+            <tr>
+              <td><code>not_found</code></td>
+              <td>Resource not found</td>
+            </tr>
+            <tr>
+              <td><code>server_error</code></td>
+              <td>Error in the API server</td>
+            </tr>
+            <tr>
+              <td><code>network_error</code></td>
+              <td>Network-related error</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <h2>Confirmation Request Structure</h2>
+        <p>
+          For dangerous operations (PUT, POST, DELETE), openapi-mcp requires confirmation:
+        </p>
+        
+        <div class="card mb-4">
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "confirmation_request",
+  "confirmation_required": true,
+  "message": "This action is irreversible. Proceed?",
+  "action": "delete_resource"
+}</code></pre>
+          <p>
+            The confirmation request includes:
+          </p>
+          <ul>
+            <li><code>confirmation_required</code>: Always <code>true</code> for confirmation requests</li>
+            <li><code>message</code>: A human-readable description of the action requiring confirmation</li>
+            <li><code>action</code>: A machine-readable identifier for the type of action</li>
+          </ul>
+          <p>
+            To proceed with the operation, retry the call with the <code>__confirmed</code> parameter set to <code>true</code>:
+          </p>
+          <pre><code class="language-json">{
+  "service_id": "SU1Z0isxPaozGVKXdv0eY",
+  "__confirmed": true
+}</code></pre>
+        </div>
+        
+        <h2>Streaming/Partial Response Structure</h2>
+        <p>
+          For long-running operations or chunked responses, openapi-mcp supports partial results:
+        </p>
+        
+        <div class="card mb-4">
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "api_response",
+  "data": {
+    // Partial response data
+  },
+  "partial": true,
+  "resume_token": "abc123xyz789",
+  "metadata": {
+    "status_code": 200,
+    "headers": {
+      // Response headers
+    }
+  }
+}</code></pre>
+          <p>
+            Partial responses include:
+          </p>
+          <ul>
+            <li><code>partial</code>: Set to <code>true</code> to indicate that this is a partial response</li>
+            <li><code>resume_token</code>: A token that can be used to retrieve the next chunk of data</li>
+          </ul>
+          <p>
+            To retrieve the next chunk, make a new call with the <code>resume_token</code>:
+          </p>
+          <pre><code class="language-json">{
+  "resume_token": "abc123xyz789"
+}</code></pre>
+        </div>
+        
+        <h2>Documentation Response Structure</h2>
+        <p>
+          The <code>describe</code> tool returns comprehensive documentation for all available tools:
+        </p>
+        
+        <div class="card mb-4">
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "api_docs",
+  "tools": [
+    {
+      "name": "listServices",
+      "description": "Retrieves a list of all services configured in the user's account.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          // Input parameter definitions
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "array",
+        "items": {
+          // Output structure definition
+        }
+      },
+      "examples": [
+        {
+          "input": {},
+          "output": {
+            // Example output
+          }
+        }
+      ]
+    },
+    // Other tools...
+  ]
+}</code></pre>
+          <p>
+            This response provides machine-readable documentation that clients can use to understand:
+          </p>
+          <ul>
+            <li>What tools are available</li>
+            <li>What parameters each tool accepts</li>
+            <li>What output format to expect</li>
+            <li>Example inputs and outputs</li>
+          </ul>
+        </div>
+        
+        <h2>Processing Output in Different Languages</h2>
+        
+        <div class="card mb-4">
+          <h3>JavaScript</h3>
+          <pre><code class="language-javascript">async function callTool(name, args) {
+  const response = await fetch('http://localhost:8080/jsonrpc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name, arguments: args }
+    })
+  });
+  
+  const result = await response.json();
+  
+  // Check for error
+  if (result.error) {
+    throw new Error(`RPC error: ${result.error.message}`);
+  }
+  
+  // Process the result based on its type
+  switch (result.result.type) {
+    case 'api_response':
+      return result.result.data;
+      
+    case 'error':
+      throw new Error(`API error: ${result.result.error.message}`);
+      
+    case 'confirmation_request':
+      const confirmed = confirm(result.result.message);
+      if (confirmed) {
+        return callTool(name, { ...args, __confirmed: true });
+      } else {
+        throw new Error('Operation cancelled');
+      }
+      
+    default:
+      console.warn(`Unknown response type: ${result.result.type}`);
+      return result.result;
+  }
+}</code></pre>
+        </div>
+        
+        <div class="card mb-4">
+          <h3>Python</h3>
+          <pre><code class="language-python">import requests
+import json
+
+def call_tool(name, args):
+    response = requests.post('http://localhost:8080/jsonrpc', json={
+        'jsonrpc': '2.0',
+        'id': 1,
+        'method': 'tools/call',
+        'params': {'name': name, 'arguments': args}
+    })
+    
+    result = response.json()
+    
+    # Check for JSON-RPC error
+    if 'error' in result:
+        raise Exception(f"RPC error: {result['error']['message']}")
+    
+    # Process the result based on its type
+    result_obj = result['result']
+    
+    if result_obj['type'] == 'api_response':
+        return result_obj['data']
+        
+    elif result_obj['type'] == 'error':
+        error = result_obj['error']
+        raise Exception(f"API error: {error['message']} ({error['code']})")
+        
+    elif result_obj['type'] == 'confirmation_request':
+        # In a real application, you might prompt the user
+        confirmed = input(f"{result_obj['message']} (y/n): ").lower() == 'y'
+        
+        if confirmed:
+            args['__confirmed'] = True
+            return call_tool(name, args)
+        else:
+            raise Exception("Operation cancelled")
+            
+    else:
+        print(f"Warning: Unknown response type: {result_obj['type']}")
+        return result_obj</code></pre>
+        </div>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you understand the output structure, you can:
+        </p>
+        <ul>
+          <li>Learn about <a href="./safety-features.html">safety features</a> in more detail</li>
+          <li>Explore <a href="./library-usage.html">library usage</a> for embedding in your own projects</li>
+          <li>Review <a href="./command-line.html">command-line options</a> for more configuration possibilities</li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

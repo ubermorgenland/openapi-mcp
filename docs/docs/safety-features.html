@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Features - openapi-mcp Documentation</title>
+  <meta name="description" content="Learn about the safety features in openapi-mcp that protect against unintended API changes.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html" class="active">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Safety Features</h1>
+        
+        <p class="lead">
+          openapi-mcp includes several safety features to protect against unintended API changes. These features are especially important when using openapi-mcp with AI agents, which might otherwise make potentially destructive API calls without explicit user confirmation.
+        </p>
+        
+        <h2>Confirmation for Dangerous Operations</h2>
+        <p>
+          By default, openapi-mcp requires confirmation for any operations that use HTTP methods that can modify resources:
+        </p>
+        <ul>
+          <li><strong>PUT</strong> - Updates resources</li>
+          <li><strong>POST</strong> - Creates resources</li>
+          <li><strong>DELETE</strong> - Removes resources</li>
+        </ul>
+        
+        <div class="card mb-4">
+          <h3>Confirmation Workflow</h3>
+          <p>
+            When a client attempts to call a tool that uses one of these methods, openapi-mcp returns a confirmation request instead of immediately executing the operation:
+          </p>
+          
+          <pre><code class="language-json">// Request
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "deleteService",
+    "arguments": {
+      "service_id": "SU1Z0isxPaozGVKXdv0eY"
+    }
+  }
+}
+
+// Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "OutputFormat": "structured",
+    "OutputType": "json",
+    "type": "confirmation_request",
+    "confirmation_required": true,
+    "message": "This action is irreversible. Proceed?",
+    "action": "delete_resource"
+  }
+}</code></pre>
+          
+          <p>
+            To proceed with the operation, the client must retry the call with the <code>__confirmed</code> parameter set to <code>true</code>:
+          </p>
+          
+          <pre><code class="language-json">// Request with confirmation
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "deleteService",
+    "arguments": {
+      "service_id": "SU1Z0isxPaozGVKXdv0eY",
+      "__confirmed": true
+    }
+  }
+}
+
+// Success response
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "OutputFormat": "structured",
+    "OutputType": "json",
+    "type": "api_response",
+    "data": {
+      "status": "ok"
+    },
+    "metadata": {
+      "status_code": 200
+    }
+  }
+}</code></pre>
+        </div>
+        
+        <h2>Interactive Client Confirmation</h2>
+        <p>
+          When using the interactive client (<code>mcp-client</code>), you'll see the confirmation request and be prompted to retry with confirmation:
+        </p>
+        
+        <pre><code>mcp> call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY"}
+
+Confirmation required: This action is irreversible. Proceed?
+To confirm, retry with: call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY", "__confirmed": true}
+
+mcp> call deleteService {"service_id": "SU1Z0isxPaozGVKXdv0eY", "__confirmed": true}
+
+HTTP DELETE /service/SU1Z0isxPaozGVKXdv0eY
+Status: 200
+Response:
+{
+  "status": "ok"
+}</code></pre>
+        
+        <h2>AI Agent Confirmation Handling</h2>
+        <p>
+          When integrating with AI agents, it's important to implement proper confirmation handling. Agents should:
+        </p>
+        <ul>
+          <li>Detect the <code>confirmation_request</code> response type</li>
+          <li>Present the confirmation message to the user</li>
+          <li>Only retry with <code>__confirmed: true</code> if the user explicitly approves</li>
+        </ul>
+        
+        <div class="card mb-4">
+          <h3>Example Agent Confirmation Code</h3>
+          <pre><code class="language-javascript">async function callTool(name, args) {
+  const response = await sendMcpRequest({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: { name, arguments: args }
+  });
+  
+  // Check for confirmation request
+  if (response.result && response.result.type === 'confirmation_request') {
+    // Present confirmation to user
+    const userConfirmed = await askUserForConfirmation(response.result.message);
+    
+    if (userConfirmed) {
+      // Retry with confirmation
+      return callTool(name, { ...args, __confirmed: true });
+    } else {
+      throw new Error('Operation cancelled by user');
+    }
+  }
+  
+  return response.result;
+}</code></pre>
+        </div>
+        
+        <h2>Disabling Confirmation</h2>
+        <p>
+          While not recommended for most use cases, you can disable the confirmation requirement using the <code>--no-confirm-dangerous</code> flag:
+        </p>
+        
+        <pre><code class="language-bash">bin/openapi-mcp --no-confirm-dangerous examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <div class="card mb-4 bg-light">
+          <h4>Warning</h4>
+          <p>
+            Disabling confirmation can lead to unintended modifications. Use with caution, especially in production environments or when used with AI agents. This should only be used in controlled automation scenarios where the risk is well understood.
+          </p>
+        </div>
+        
+        <h2>Schema Validation</h2>
+        <p>
+          In addition to the confirmation workflow, openapi-mcp includes comprehensive schema validation to prevent malformed requests:
+        </p>
+        <ul>
+          <li>All tool call arguments are validated against the OpenAPI schema</li>
+          <li>Required parameters are enforced</li>
+          <li>Type checking ensures values match expected types</li>
+          <li>Enum validation ensures values are within allowed options</li>
+        </ul>
+        
+        <p>
+          When validation fails, a structured error response is returned with details about what went wrong:
+        </p>
+        
+        <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Invalid parameter",
+    "details": {
+      "field": "name",
+      "reason": "required field missing"
+    },
+    "suggestions": [
+      "Provide a name parameter"
+    ]
+  }
+}</code></pre>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you understand the safety features, you can:
+        </p>
+        <ul>
+          <li>Learn about <a href="./library-usage.html">library usage</a> for embedding in your own projects</li>
+          <li>Explore <a href="./command-line.html">command-line options</a> for more configuration possibilities</li>
+          <li>Check out <a href="./advanced.html">advanced usage</a> patterns</li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

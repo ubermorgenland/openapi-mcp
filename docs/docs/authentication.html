@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication - openapi-mcp Documentation</title>
+  <meta name="description" content="Learn how to configure authentication methods for APIs with openapi-mcp.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar">
+        <a href="../" class="logo">
+          <img src="../images/logo.svg" alt="openapi-mcp logo">
+          <span>openapi-mcp</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="./">Documentation</a></li>
+          <li><a href="../examples/">Examples</a></li>
+          <li><a href="https://github.com/jedisct1/openapi-mcp" target="_blank">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Documentation Content -->
+  <div class="container">
+    <div class="docs-container">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <h3>Documentation</h3>
+        <ul class="docs-menu">
+          <li><a href="./">Introduction</a></li>
+          <li><a href="./installation.html">Installation</a></li>
+          <li><a href="./quick-start.html">Quick Start</a></li>
+          <li><a href="./authentication.html" class="active">Authentication</a></li>
+          <li><a href="./configuration.html">Configuration</a></li>
+          <li><a href="./ai-integration.html">AI Agent Integration</a></li>
+          <li><a href="./output-structure.html">Output Structure</a></li>
+          <li><a href="./safety-features.html">Safety Features</a></li>
+          <li><a href="./library-usage.html">Library Usage</a></li>
+          <li><a href="./command-line.html">Command-Line Options</a></li>
+          <li><a href="./advanced.html">Advanced Usage</a></li>
+        </ul>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Authentication</h1>
+        
+        <p class="lead">
+          openapi-mcp supports multiple authentication methods as defined in OpenAPI 3.x specifications. This page explains how to configure authentication for your API calls.
+        </p>
+        
+        <h2>Supported Authentication Methods</h2>
+        <p>
+          openapi-mcp supports the following authentication methods:
+        </p>
+        <ul>
+          <li><strong>API Key</strong> - In header, query, or cookie as defined in the OpenAPI spec</li>
+          <li><strong>Bearer Token / OAuth2</strong> - As an Authorization header with Bearer prefix</li>
+          <li><strong>Basic Authentication</strong> - As an Authorization header with Basic prefix</li>
+        </ul>
+        
+        <div class="card mb-4">
+          <h3>How Authentication is Applied</h3>
+          <p>
+            The authentication method is applied based on how it's defined in the OpenAPI specification:
+          </p>
+          <ul>
+            <li>API keys are sent in the location (header, query, cookie) specified in the spec</li>
+            <li>Bearer tokens are sent as <code>Authorization: Bearer {token}</code> headers</li>
+            <li>Basic auth is sent as <code>Authorization: Basic {base64(username:password)}</code> headers</li>
+          </ul>
+          <p>
+            If multiple authentication methods are provided, Bearer token takes precedence over API key, which takes precedence over Basic auth.
+          </p>
+        </div>
+        
+        <h2>API Key Authentication</h2>
+        <p>
+          API key authentication is commonly used for APIs that require a key to be sent in a header, query parameter, or cookie.
+        </p>
+        
+        <h3>Command-Line Flag</h3>
+        <pre><code class="language-bash">bin/openapi-mcp --api-key=your_api_key examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>Environment Variable</h3>
+        <pre><code class="language-bash">API_KEY=your_api_key bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>HTTP Header (HTTP Mode Only)</h3>
+        <p>
+          When using HTTP mode (<code>--http=:8080</code>), you can provide API keys via HTTP headers in your requests:
+        </p>
+        <pre><code class="language-bash"># Using X-API-Key header
+curl -H "X-API-Key: your_api_key" http://localhost:8080/mcp -d '...'
+
+# Using Api-Key header  
+curl -H "Api-Key: your_api_key" http://localhost:8080/mcp -d '...'</code></pre>
+        
+        <p>
+          The API key will be sent as specified in the OpenAPI spec, which might look like:
+        </p>
+        <pre><code class="language-yaml">components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header  # or "query" or "cookie"
+      name: X-API-Key  # The actual header, query parameter, or cookie name</code></pre>
+        
+        <h2>Bearer Token Authentication</h2>
+        <p>
+          Bearer token authentication is used for OAuth2 and other token-based authentication mechanisms.
+        </p>
+        
+        <h3>Command-Line Flag</h3>
+        <pre><code class="language-bash">bin/openapi-mcp --bearer-token=your_token examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>Environment Variable</h3>
+        <pre><code class="language-bash">BEARER_TOKEN=your_token bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>HTTP Header (HTTP Mode Only)</h3>
+        <p>
+          When using HTTP mode, you can provide Bearer tokens via the Authorization header:
+        </p>
+        <pre><code class="language-bash">curl -H "Authorization: Bearer your_token" http://localhost:8080/mcp -d '...'</code></pre>
+        
+        <p>
+          The bearer token will be sent as an <code>Authorization: Bearer {token}</code> header for endpoints that require OAuth2 or HTTP bearer authentication, as defined in the OpenAPI spec:
+        </p>
+        <pre><code class="language-yaml">components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer</code></pre>
+        
+        <div class="card mb-4 bg-light">
+          <h4>Note about OAuth2</h4>
+          <p>
+            For OAuth2, you must provide a valid access token directly. Interactive OAuth2 flows (authorization code, implicit, etc.) are not yet supported. The token is provided via the <code>--bearer-token</code> flag or <code>BEARER_TOKEN</code> environment variable.
+          </p>
+        </div>
+        
+        <h2>Basic Authentication</h2>
+        <p>
+          Basic authentication uses a username and password combination.
+        </p>
+        
+        <h3>Command-Line Flag</h3>
+        <pre><code class="language-bash">bin/openapi-mcp --basic-auth=username:password examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>Environment Variable</h3>
+        <pre><code class="language-bash">BASIC_AUTH=username:password bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>HTTP Header (HTTP Mode Only)</h3>
+        <p>
+          When using HTTP mode, you can provide Basic authentication via the Authorization header:
+        </p>
+        <pre><code class="language-bash">curl -H "Authorization: Basic base64_encoded_credentials" http://localhost:8080/mcp -d '...'</code></pre>
+        
+        <p>
+          The username and password will be Base64 encoded and sent as an <code>Authorization: Basic {encoded}</code> header for endpoints that require HTTP basic authentication, as defined in the OpenAPI spec:
+        </p>
+        <pre><code class="language-yaml">components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic</code></pre>
+        
+        <h2>HTTP Header Authentication (HTTP Mode)</h2>
+        <p>
+          When running openapi-mcp in HTTP mode (<code>--http=:8080</code>), you can provide authentication credentials via HTTP headers in your requests to the MCP server. This is particularly useful for integrating with web applications, API gateways, or other HTTP-based systems.
+        </p>
+        
+        <div class="card mb-4">
+          <h3>Supported Headers</h3>
+          <ul>
+            <li><code>X-API-Key</code> or <code>Api-Key</code> - for API key authentication</li>
+            <li><code>Authorization: Bearer &lt;token&gt;</code> - for OAuth2/Bearer token authentication</li>
+            <li><code>Authorization: Basic &lt;credentials&gt;</code> - for Basic authentication</li>
+          </ul>
+        </div>
+        
+        <h3>Header Authentication Examples</h3>
+        <pre><code class="language-bash"># Start HTTP server
+bin/openapi-mcp --http=:8080 examples/fastly-openapi-mcp.yaml
+
+# Make authenticated requests with headers
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{}}'
+
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your_token" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"listServices","arguments":{}}}'</code></pre>
+        
+        <div class="card mb-4 bg-light">
+          <h4>Authentication Precedence</h4>
+          <p>
+            When using HTTP mode, authentication headers in requests take precedence over environment variables and command-line flags for the duration of each request. This allows different clients to use different credentials when connecting to the same MCP server instance.
+          </p>
+        </div>
+        
+        <h2>Multiple Authentication Methods</h2>
+        <p>
+          If your OpenAPI specification defines multiple authentication methods, you can provide all of them, and openapi-mcp will use the appropriate one for each endpoint based on the security requirements defined in the spec.
+        </p>
+        <pre><code class="language-bash">bin/openapi-mcp \
+  --api-key=your_api_key \
+  --bearer-token=your_token \
+  --basic-auth=username:password \
+  examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h2>Overriding the Base URL</h2>
+        <p>
+          In some cases, you may need to override the base URL defined in the OpenAPI spec, especially if you're testing against a different environment.
+        </p>
+        
+        <h3>Command-Line Flag</h3>
+        <pre><code class="language-bash">bin/openapi-mcp --base-url=https://api.example.com examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h3>Environment Variable</h3>
+        <pre><code class="language-bash">OPENAPI_BASE_URL=https://api.example.com bin/openapi-mcp examples/fastly-openapi-mcp.yaml</code></pre>
+        
+        <h2>Troubleshooting Authentication</h2>
+        <p>
+          If you're experiencing authentication issues, here are some tips:
+        </p>
+        <ul>
+          <li>Check that you're providing the correct authentication credentials</li>
+          <li>Verify that the OpenAPI spec correctly defines the security requirements</li>
+          <li>Look for any error messages in the response that might indicate authentication issues</li>
+          <li>Use the <code>--extended</code> flag to get more verbose output, which might help diagnose issues</li>
+        </ul>
+        
+        <div class="card mt-4">
+          <h3>Example Authentication Error</h3>
+          <pre><code class="language-json">{
+  "OutputFormat": "structured",
+  "OutputType": "json",
+  "type": "error",
+  "error": {
+    "code": "authentication_error",
+    "message": "Authentication failed",
+    "details": {
+      "status_code": 401
+    },
+    "suggestions": [
+      "Check that you provided the correct API key",
+      "Verify that the API key has the necessary permissions"
+    ]
+  }
+}</code></pre>
+        </div>
+        
+        <h2>Next Steps</h2>
+        <p>
+          Now that you understand how to configure authentication, you can:
+        </p>
+        <ul>
+          <li>Learn about <a href="./configuration.html">other configuration options</a></li>
+          <li>Explore <a href="./ai-integration.html">AI agent integration</a></li>
+          <li>Understand <a href="./output-structure.html">output structure</a></li>
+        </ul>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>openapi-mcp</h4>
+          <p>Transform any OpenAPI 3.x specification into a powerful, AI-friendly MCP tool server in seconds.</p>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Documentation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Getting Started</a></li>
+            <li><a href="./installation.html">Installation</a></li>
+            <li><a href="./configuration.html">Configuration</a></li>
+            <li><a href="./authentication.html">Authentication</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="../examples/">Examples</a></li>
+            <li><a href="https://pkg.go.dev/github.com/jedisct1/openapi-mcp/pkg/openapi2mcp" target="_blank">API Reference</a></li>
+            <li><a href="https://github.com/jedisct1/openapi-mcp/issues" target="_blank">Issue Tracker</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>
