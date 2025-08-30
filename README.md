@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/ubermorgen/openapi-mcp/main/.github/logo.png.png" alt="openapi-mcp" width="600"/>
+# <img src="https://raw.githubusercontent.com/ubermorgenland/openapi-mcp/main/.github/logo.png.png" alt="openapi-mcp" width="600"/>
 
 # openapi-mcp
 
