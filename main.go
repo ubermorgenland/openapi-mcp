@@ -7,13 +7,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/ubermorgenland/openapi-mcp/pkg/auth"
 	"github.com/ubermorgenland/openapi-mcp/pkg/database"
 	"github.com/ubermorgenland/openapi-mcp/pkg/mcp/server"
 	"github.com/ubermorgenland/openapi-mcp/pkg/models"
@@ -52,40 +55,11 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// extractAuthSchemeFromSpec extracts authentication scheme information from the OpenAPI spec
-func extractAuthSchemeFromSpec(doc *openapi3.T) (string, string, string) {
-	if doc.Components == nil || doc.Components.SecuritySchemes == nil {
-		return "", "", ""
-	}
-
-	// Look for the first security scheme
-	for schemeName, schemeRef := range doc.Components.SecuritySchemes {
-		if schemeRef.Value != nil {
-			switch schemeRef.Value.Type {
-			case "apiKey":
-				// Return the scheme name and the location/name info
-				location := "header"
-				if schemeRef.Value.In == "query" {
-					location = "query"
-				}
-				return schemeName, "apiKey", location + ":" + schemeRef.Value.Name
-			case "http":
-				switch schemeRef.Value.Scheme {
-				case "bearer":
-					return schemeName, "bearer", "header:Authorization"
-				case "basic":
-					return schemeName, "basic", "header:Authorization"
-				}
-			}
-		}
-	}
-	return "", "", ""
-}
 
 // Global variables for dynamic reloading
 var (
-	// specLookup is a global map to store endpoint -> spec mapping for API key token lookup
-	specLookup map[string]*models.OpenAPISpec
+	// Thread-safe state management
+	authStateManager *auth.StateManager
 
 	// Dynamic reloading state
 	globalMux      *http.ServeMux
@@ -103,362 +77,55 @@ type SpecReloadResponse struct {
 	Error        string   `json:"error,omitempty"`
 }
 
-// customAuthContextFunc extends the default authContextFunc to handle API key headers dynamically
-// Now uses database spec api_key_token when available
+// customAuthContextFunc creates a secure, request-scoped authentication context
 func customAuthContextFunc(ctx context.Context, r *http.Request, doc *openapi3.T, spec *models.OpenAPISpec) context.Context {
-	// Determine the endpoint dynamically from the request path
-	endpoint := ""
-	path := strings.Trim(r.URL.Path, "/")
-	if path != "" {
-		// Split by "/" and take the first part as the endpoint
-		parts := strings.Split(path, "/")
-		if len(parts) > 0 && parts[0] != "" {
-			// Convert to uppercase for environment variable naming convention
-			endpoint = strings.ToUpper(parts[0])
+	// Create authentication context for this request
+	authCtx := auth.CreateAuthContext(r, doc, spec)
+
+	// If no spec provided, try to get it from state manager
+	if spec == nil && authStateManager != nil {
+		endpoint := strings.ToLower(strings.Trim(r.URL.Path, "/"))
+		if strings.Contains(endpoint, "/") {
+			endpoint = strings.Split(endpoint, "/")[0]
+		}
+		if foundSpec, exists := authStateManager.GetSpec(endpoint); exists {
+			// Recreate auth context with the found spec
+			authCtx = auth.CreateAuthContext(r, doc, foundSpec)
 		}
 	}
 
-	// Set up global authentication environment variables dynamically for this request
-	setupGlobalAuth(endpoint)
+	// Add auth context to request context
+	ctx = auth.WithAuthContext(ctx, authCtx)
 
-	// Extract authentication scheme from the OpenAPI spec
-	_, authType, authPath := extractAuthSchemeFromSpec(doc)
+	// Apply legacy environment variable setup for backward compatibility
+	// This is temporary until the MCP library is updated to use context-based auth
+	setupLegacyEnvVars(authCtx)
 
-	// Save original environment values to restore them later
-	origAPIKey := os.Getenv("API_KEY")
-	origBearerToken := os.Getenv("BEARER_TOKEN")
-	origBasicAuth := os.Getenv("BASIC_AUTH")
-
-	// Save endpoint-specific API key if it exists
-	var origEndpointAPIKey string
-	if endpoint != "" {
-		origEndpointAPIKey = os.Getenv(strings.ToUpper(endpoint) + "_API_KEY")
-	}
-
-	// PRIORITY 1: Use database spec api_key_token if available
-	if spec != nil && spec.ApiKeyToken != nil && *spec.ApiKeyToken != "" {
-		// Determine authentication type from OpenAPI spec
-		_, authType, _ := extractAuthSchemeFromSpec(doc)
-
-		switch authType {
-		case "bearer":
-			// Use api_key_token as Bearer token
-			os.Setenv("BEARER_TOKEN", *spec.ApiKeyToken)
-			log.Printf("Using database token as Bearer token for %s: %s", endpoint, (*spec.ApiKeyToken)[:10]+"...")
-		case "apiKey":
-			// Use api_key_token as API key
-			os.Setenv("API_KEY", *spec.ApiKeyToken)
-			log.Printf("Using database token as API key for %s: %s", endpoint, (*spec.ApiKeyToken)[:10]+"...")
-		case "basic":
-			// Use api_key_token as Basic auth
-			os.Setenv("BASIC_AUTH", *spec.ApiKeyToken)
-			log.Printf("Using database token as Basic auth for %s: %s", endpoint, (*spec.ApiKeyToken)[:10]+"...")
-		default:
-			// Default to API key for unknown types
-			os.Setenv("API_KEY", *spec.ApiKeyToken)
-			log.Printf("Using database token as API key (default) for %s: %s", endpoint, (*spec.ApiKeyToken)[:10]+"...")
-		}
-	} else {
-		// PRIORITY 2: Load from environment variables as fallback
-		if endpoint != "" {
-			if envAPIKey := os.Getenv(strings.ToUpper(endpoint) + "_API_KEY"); envAPIKey != "" {
-				os.Setenv("API_KEY", envAPIKey)
-			}
-			if envBearerToken := os.Getenv(strings.ToUpper(endpoint) + "_BEARER_TOKEN"); envBearerToken != "" {
-				os.Setenv("BEARER_TOKEN", envBearerToken)
-			}
-		}
-
-		// PRIORITY 3: Check for general environment variables as final fallback
-		if os.Getenv("API_KEY") == "" {
-			if generalAPIKey := os.Getenv("GENERAL_API_KEY"); generalAPIKey != "" {
-				os.Setenv("API_KEY", generalAPIKey)
-			}
-		}
-		if os.Getenv("BEARER_TOKEN") == "" {
-			if generalBearerToken := os.Getenv("GENERAL_BEARER_TOKEN"); generalBearerToken != "" {
-				os.Setenv("BEARER_TOKEN", generalBearerToken)
-			}
-		}
-	}
-
-	// Bearer token handling is now done in the priority section above
-
-	// Extract authentication from HTTP headers based on the auth scheme from spec
-	if authPath != "" {
-		parts := strings.Split(authPath, ":")
-		if len(parts) == 2 {
-			location := parts[0]
-			keyName := parts[1]
-
-			var authValue string
-			switch location {
-			case "header":
-				authValue = r.Header.Get(keyName)
-			case "query":
-				authValue = r.URL.Query().Get(keyName)
-			}
-
-			if authValue != "" {
-				switch authType {
-				case "apiKey":
-					if endpoint != "" {
-						os.Setenv(strings.ToUpper(endpoint)+"_API_KEY", authValue)
-					}
-					os.Setenv("API_KEY", authValue)
-				case "bearer":
-					// Extract bearer token from Authorization header
-					if len(authValue) >= 7 && authValue[:7] == "Bearer " {
-						bearerToken := authValue[7:]
-						if endpoint != "" {
-							os.Setenv(strings.ToUpper(endpoint)+"_BEARER_TOKEN", bearerToken)
-						}
-						os.Setenv("BEARER_TOKEN", bearerToken)
-					}
-				case "basic":
-					// Extract basic auth from Authorization header
-					if len(authValue) > 6 && authValue[:6] == "Basic " {
-						basicAuth := authValue[6:]
-						if endpoint != "" {
-							os.Setenv(strings.ToUpper(endpoint)+"_BASIC_AUTH", basicAuth)
-						}
-						os.Setenv("BASIC_AUTH", basicAuth)
-					}
-				}
-			}
-		}
-	} else {
-		// Fallback to common API key header patterns if spec doesn't define them
-		switch {
-		case r.Header.Get("X-API-Key") != "":
-			apiKey := r.Header.Get("X-API-Key")
-			if endpoint != "" {
-				os.Setenv(endpoint+"_API_KEY", apiKey)
-			}
-			os.Setenv("API_KEY", apiKey)
-		case r.Header.Get("Api-Key") != "":
-			apiKey := r.Header.Get("Api-Key")
-			if endpoint != "" {
-				os.Setenv(strings.ToUpper(endpoint)+"_API_KEY", apiKey)
-			}
-			os.Setenv("API_KEY", apiKey)
-		case r.Header.Get("x-rapidapi-key") != "":
-			// Handle Twitter API's specific header
-			apiKey := r.Header.Get("x-rapidapi-key")
-			if endpoint != "" {
-				os.Setenv(strings.ToUpper(endpoint)+"_API_KEY", apiKey)
-			}
-			os.Setenv("API_KEY", apiKey)
-		}
-	}
-
-	// Check for existing environment variables as defaults
-	if os.Getenv("BEARER_TOKEN") == "" {
-		if generalBearerToken := os.Getenv("GENERAL_BEARER_TOKEN"); generalBearerToken != "" {
-			os.Setenv("BEARER_TOKEN", generalBearerToken)
-		}
-	}
-	if os.Getenv("BASIC_AUTH") == "" {
-		if generalBasicAuth := os.Getenv("GENERAL_BASIC_AUTH"); generalBasicAuth != "" {
-			os.Setenv("BASIC_AUTH", generalBasicAuth)
-		}
-	}
-
-	// Handle Authorization header (only override if not already set from env)
-	if bearerToken := r.Header.Get("Authorization"); bearerToken != "" {
-		switch {
-		case len(bearerToken) >= 7 && bearerToken[:7] == "Bearer ":
-			if os.Getenv("BEARER_TOKEN") == "" {
-				os.Setenv("BEARER_TOKEN", bearerToken[7:])
-			}
-		case len(bearerToken) >= 6 && bearerToken[:6] == "Basic ":
-			if os.Getenv("BASIC_AUTH") == "" {
-				os.Setenv("BASIC_AUTH", bearerToken[6:])
-			}
-		}
-	}
-
-	// Create a context that restores the original environment when done
-	return &authContext{
-		Context:            ctx,
-		origAPIKey:         origAPIKey,
-		origBearerToken:    origBearerToken,
-		origBasicAuth:      origBasicAuth,
-		endpoint:           endpoint,
-		origEndpointAPIKey: origEndpointAPIKey,
-	}
+	return ctx
 }
 
-// authContext wraps a context and restores original environment variables when done
-type authContext struct {
-	context.Context
-	origAPIKey         string
-	origBearerToken    string
-	origBasicAuth      string
-	endpoint           string
-	origEndpointAPIKey string
-}
+// setupLegacyEnvVars sets environment variables for backward compatibility
+// TODO: Remove this when MCP library supports context-based authentication
+func setupLegacyEnvVars(authCtx *auth.AuthContext) {
+	if authCtx.Token == "" {
+		return
+	}
 
-// Done restores the original environment variables when the context is done
-func (c *authContext) Done() <-chan struct{} {
-	done := c.Context.Done()
-	if done != nil {
-		go func() {
-			<-done
-			c.restoreEnv()
-		}()
-	}
-	return done
-}
-
-func (c *authContext) restoreEnv() {
-	if c.origAPIKey != "" {
-		os.Setenv("API_KEY", c.origAPIKey)
-	} else {
-		os.Unsetenv("API_KEY")
-	}
-	if c.origBearerToken != "" {
-		os.Setenv("BEARER_TOKEN", c.origBearerToken)
-	} else {
-		os.Unsetenv("BEARER_TOKEN")
-	}
-	if c.origBasicAuth != "" {
-		os.Setenv("BASIC_AUTH", c.origBasicAuth)
-	} else {
-		os.Unsetenv("BASIC_AUTH")
-	}
-	if c.endpoint != "" {
-		if c.origEndpointAPIKey != "" {
-			os.Setenv(strings.ToUpper(c.endpoint)+"_API_KEY", c.origEndpointAPIKey)
-		} else {
-			os.Unsetenv(strings.ToUpper(c.endpoint) + "_API_KEY")
+	switch authCtx.AuthType {
+	case "bearer":
+		os.Setenv("BEARER_TOKEN", authCtx.Token)
+	case "basic":
+		os.Setenv("BASIC_AUTH", authCtx.Token)
+	case "apiKey":
+		os.Setenv("API_KEY", authCtx.Token)
+		if authCtx.Endpoint != "" {
+			os.Setenv(authCtx.Endpoint+"_API_KEY", authCtx.Token)
 		}
 	}
 }
 
-// setupGlobalAuthAtStartup sets up global environment variables for authentication at server startup
-func setupGlobalAuthAtStartup() {
-	log.Printf("Setting up global authentication environment variables at startup...")
 
-	// Dynamically check for any endpoint bearer tokens and set the first one found globally
-	for _, envVar := range os.Environ() {
-		parts := strings.SplitN(envVar, "=", 2)
-		if len(parts) == 2 {
-			key := parts[0]
-			value := parts[1]
 
-			// Look for any *_BEARER_TOKEN environment variable (except GENERAL_BEARER_TOKEN)
-			if strings.HasSuffix(key, "_BEARER_TOKEN") && key != "GENERAL_BEARER_TOKEN" && value != "" {
-				os.Setenv("BEARER_TOKEN", value)
-				log.Printf("Set global BEARER_TOKEN from %s: %s", key, value[:10]+"...")
-				break // Use the first one found
-			}
-		}
-	}
-
-	// Check for general bearer token and set it globally if no specific one was found
-	if os.Getenv("BEARER_TOKEN") == "" {
-		if generalToken := os.Getenv("GENERAL_BEARER_TOKEN"); generalToken != "" {
-			os.Setenv("BEARER_TOKEN", generalToken)
-			log.Printf("Set global BEARER_TOKEN from GENERAL_BEARER_TOKEN: %s", generalToken[:10]+"...")
-		}
-	}
-
-	// Dynamically check for any endpoint API keys and set the first one found globally
-	if os.Getenv("API_KEY") == "" {
-		for _, envVar := range os.Environ() {
-			parts := strings.SplitN(envVar, "=", 2)
-			if len(parts) == 2 {
-				key := parts[0]
-				value := parts[1]
-
-				// Look for any *_API_KEY environment variable (except GENERAL_API_KEY)
-				if strings.HasSuffix(key, "_API_KEY") && key != "GENERAL_API_KEY" && value != "" {
-					os.Setenv("API_KEY", value)
-					log.Printf("Set global API_KEY from %s: %s", key, value[:10]+"...")
-					break // Use the first one found
-				}
-			}
-		}
-	}
-
-	// Check for general API key and set it globally if no specific one was found
-	if os.Getenv("API_KEY") == "" {
-		if generalAPIKey := os.Getenv("GENERAL_API_KEY"); generalAPIKey != "" {
-			os.Setenv("API_KEY", generalAPIKey)
-			log.Printf("Set global API_KEY from GENERAL_API_KEY: %s", generalAPIKey[:10]+"...")
-		}
-	}
-
-	// Log final state
-	if bearerToken := os.Getenv("BEARER_TOKEN"); bearerToken != "" {
-		log.Printf("Final BEARER_TOKEN set: %s", bearerToken[:10]+"...")
-	} else {
-		log.Printf("WARNING: No BEARER_TOKEN set at startup")
-	}
-
-	if apiKey := os.Getenv("API_KEY"); apiKey != "" {
-		log.Printf("Final API_KEY set: %s", apiKey[:10]+"...")
-	} else {
-		log.Printf("WARNING: No API_KEY set at startup")
-	}
-}
-
-// setupGlobalAuth sets up global environment variables for authentication dynamically
-func setupGlobalAuth(endpoint string) {
-	// Set endpoint-specific bearer token if available (ALWAYS override)
-	if endpoint != "" {
-		if endpointToken := os.Getenv(strings.ToUpper(endpoint) + "_BEARER_TOKEN"); endpointToken != "" {
-			os.Setenv("BEARER_TOKEN", endpointToken)
-			log.Printf("Set global BEARER_TOKEN from %s_BEARER_TOKEN: %s", strings.ToUpper(endpoint), endpointToken[:10]+"...")
-		}
-
-		if endpointAPIKey := os.Getenv(strings.ToUpper(endpoint) + "_API_KEY"); endpointAPIKey != "" {
-			os.Setenv("API_KEY", endpointAPIKey)
-			log.Printf("Set global API_KEY from %s_API_KEY: %s", strings.ToUpper(endpoint), endpointAPIKey[:10]+"...")
-		}
-	}
-
-	// Set general bearer token if no endpoint-specific one was set
-	if os.Getenv("BEARER_TOKEN") == "" {
-		if generalToken := os.Getenv("GENERAL_BEARER_TOKEN"); generalToken != "" {
-			os.Setenv("BEARER_TOKEN", generalToken)
-			log.Printf("Set global BEARER_TOKEN from GENERAL_BEARER_TOKEN: %s", generalToken[:10]+"...")
-		}
-	}
-
-	// Set general API key if no endpoint-specific one was set
-	if os.Getenv("API_KEY") == "" {
-		if generalAPIKey := os.Getenv("GENERAL_API_KEY"); generalAPIKey != "" {
-			os.Setenv("API_KEY", generalAPIKey)
-			log.Printf("Set global API_KEY from GENERAL_API_KEY: %s", generalAPIKey[:10]+"...")
-		}
-	}
-
-	// Log current state for debugging
-	bearerToken := os.Getenv("BEARER_TOKEN")
-	apiKey := os.Getenv("API_KEY")
-
-	bearerDisplay := "NOT_SET"
-	if len(bearerToken) > 0 {
-		if len(bearerToken) > 10 {
-			bearerDisplay = bearerToken[:10] + "..."
-		} else {
-			bearerDisplay = bearerToken
-		}
-	}
-
-	apiKeyDisplay := "NOT_SET"
-	if len(apiKey) > 0 {
-		if len(apiKey) > 10 {
-			apiKeyDisplay = apiKey[:10] + "..."
-		} else {
-			apiKeyDisplay = apiKey
-		}
-	}
-
-	log.Printf("Current environment: BEARER_TOKEN=%s, API_KEY=%s", bearerDisplay, apiKeyDisplay)
-}
 
 // getEndpointFromFilename converts a filename to an endpoint URL path
 func getEndpointFromFilename(filename string) string {
@@ -496,8 +163,10 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 	reloadMux.Lock()
 	defer reloadMux.Unlock()
 
-	// Clear existing spec lookup
-	specLookup = make(map[string]*models.OpenAPISpec)
+	// Initialize auth state manager if not already done
+	if authStateManager == nil {
+		authStateManager = auth.NewStateManager()
+	}
 
 	// Create new mux
 	newMux := http.NewServeMux()
@@ -617,8 +286,8 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 	for _, spec := range specs {
 		endpoint := strings.TrimPrefix(spec.EndpointPath, "/")
 
-		// Store spec in lookup for auth context
-		specLookup[endpoint] = spec
+		// Store spec in thread-safe state manager
+		// (Will be updated in bulk after processing all specs)
 
 		log.Printf("Loading database spec: %s -> endpoint: /%s", spec.Name, endpoint)
 
@@ -631,7 +300,7 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 		}
 
 		// Log the authentication info
-		schemeName, authType, authPath := extractAuthSchemeFromSpec(doc)
+		schemeName, authType, authPath := auth.ExtractAuthSchemeFromSpec(doc)
 		if authPath != "" {
 			log.Printf("%s API: Found security scheme '%s' with %s authentication: %s", endpoint, schemeName, authType, authPath)
 			// Show database token status and how it will be used
@@ -669,6 +338,9 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 		log.Printf("Mounted %s API at /%s", doc.Info.Title, endpoint)
 		mountedAPIs = append(mountedAPIs, endpoint)
 	}
+
+	// Update specs in thread-safe state manager
+	authStateManager.UpdateSpecs(specs)
 
 	// Replace global mux
 	globalMux = newMux
@@ -929,9 +601,23 @@ func handleCreateSpec(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limit request body size to 10MB to handle large specs gracefully
+	const maxPayloadSize = 10 << 20 // 10MB
+	r.Body = http.MaxBytesReader(w, r.Body, maxPayloadSize)
+
 	var req ImportSpecRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeErrorResponse(w, "Invalid JSON payload", http.StatusBadRequest)
+		// Handle different types of errors gracefully
+		switch {
+		case err.Error() == "http: request body too large":
+			writeErrorResponse(w, "Request payload too large (max 10MB)", http.StatusRequestEntityTooLarge)
+		case strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "deadline"):
+			writeErrorResponse(w, "Request timeout while processing large payload", http.StatusRequestTimeout)
+		case strings.Contains(err.Error(), "connection"):
+			writeErrorResponse(w, "Connection error while reading payload", http.StatusBadRequest)
+		default:
+			writeErrorResponse(w, fmt.Sprintf("Invalid JSON payload: %v", err), http.StatusBadRequest)
+		}
 		return
 	}
 
@@ -956,6 +642,13 @@ func handleCreateSpec(w http.ResponseWriter, r *http.Request) {
 		} else {
 			req.FileFormat = "yaml"
 		}
+	}
+
+	// Check for Swagger 2.0 and reject immediately to prevent server hangs
+	if strings.Contains(req.SpecContent, `"swagger":"2.0"`) || strings.Contains(req.SpecContent, `swagger: "2.0"`) ||
+		strings.Contains(req.SpecContent, `"swagger": "2.0"`) || strings.Contains(req.SpecContent, `swagger: '2.0'`) {
+		writeErrorResponse(w, "Swagger 2.0 specifications are not supported. Please convert to OpenAPI 3.x format first.", http.StatusBadRequest)
+		return
 	}
 
 	// Set default active status
@@ -1112,12 +805,52 @@ func startDatabasePolling(intervalSeconds int) {
 	}()
 }
 
-func main() {
-	// Set up global environment variables for authentication at startup
-	setupGlobalAuthAtStartup()
+// startServerWithGracefulShutdown starts the HTTP server with proper graceful shutdown handling
+func startServerWithGracefulShutdown(srv *http.Server) error {
+	// Channel to listen for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	// Initialize specLookup map
-	specLookup = make(map[string]*models.OpenAPISpec)
+	// Channel to receive server errors
+	serverErrors := make(chan error, 1)
+
+	// Start server in a goroutine
+	go func() {
+		log.Printf("Starting server on %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			serverErrors <- err
+		}
+	}()
+
+	// Wait for either interrupt signal or server error
+	select {
+	case err := <-serverErrors:
+		return fmt.Errorf("server error: %v", err)
+	case sig := <-quit:
+		log.Printf("Received signal %v, initiating graceful shutdown...", sig)
+
+		// Create context with 25 second timeout for graceful shutdown
+		// This gives the server 25 seconds to finish ongoing requests before forcing termination
+		// The remaining 5 seconds of the 30-second terminationGracePeriodSeconds will be used for final cleanup
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+
+		log.Printf("Shutting down server with %v timeout...", 25*time.Second)
+
+		// Attempt graceful shutdown
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("Server shutdown error: %v", err)
+			return fmt.Errorf("server shutdown error: %v", err)
+		}
+
+		log.Printf("Server shut down gracefully")
+		return nil
+	}
+}
+
+func main() {
+	// Initialize auth state manager
+	authStateManager = auth.NewStateManager()
 
 	// Check for configuration environment variables
 	pollingInterval := 30 // Default 30 seconds
@@ -1178,8 +911,8 @@ func main() {
 							http.Error(w, "Server not ready", http.StatusServiceUnavailable)
 						}
 					}),
-					ReadTimeout:  30 * time.Second,
-					WriteTimeout: 60 * time.Second,
+					ReadTimeout:  240 * time.Second, // Increased to 4 minutes for very large spec uploads
+					WriteTimeout: 240 * time.Second, // Increased to 4 minutes for large responses
 				}
 
 				log.Printf("Starting dynamic database-driven server on %s", srv.Addr)
@@ -1207,7 +940,7 @@ func main() {
 					log.Printf("   Use POST /reload to manually reload specs")
 				}
 
-				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				if err := startServerWithGracefulShutdown(srv); err != nil {
 					log.Fatalf("HTTP server error: %v", err)
 				}
 				return
@@ -1251,7 +984,7 @@ func main() {
 		}
 
 		// Log the authentication scheme extracted from spec
-		schemeName, authType, authPath := extractAuthSchemeFromSpec(doc)
+		schemeName, authType, authPath := auth.ExtractAuthSchemeFromSpec(doc)
 		if authPath != "" {
 			log.Printf("%s API: Found security scheme '%s' with %s authentication: %s", endpoint, schemeName, authType, authPath)
 			// Add to required environment variables
@@ -1334,12 +1067,11 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		ReadTimeout:  240 * time.Second, // Increased to 4 minutes for very large spec uploads
+		WriteTimeout: 240 * time.Second, // Increased to 4 minutes for large responses
 	}
 
-	log.Printf("Starting server on %s", srv.Addr)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := startServerWithGracefulShutdown(srv); err != nil {
 		log.Fatalf("HTTP server error: %v", err)
 	}
 }
