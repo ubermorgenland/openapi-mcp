@@ -32,6 +32,7 @@ config.yml
 *config*.local
 *config*.prod
 *config*.dev
+*.code-workspace
 
 # Database files
 *.db
