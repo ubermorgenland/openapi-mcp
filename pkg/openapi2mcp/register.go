@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/ubermorgenland/openapi-mcp/pkg/database"
 	"github.com/ubermorgenland/openapi-mcp/pkg/mcp/mcp"
 	mcpserver "github.com/ubermorgenland/openapi-mcp/pkg/mcp/server"
 	"github.com/xeipuuv/gojsonschema"
@@ -992,13 +993,23 @@ func RegisterOpenAPITools(server *mcpserver.MCPServer, ops []OpenAPIOperation, d
 			}
 		}
 		
-		// Memory monitoring every operation
+		// Memory monitoring and database health check every 10 operations
 		if processedCount%10 == 0 {
 			runtime.ReadMemStats(&m)
 			fmt.Fprintf(os.Stderr, "[INFO] ✅ Progress %d/%d (%.1f%%), Memory: %.1fMB heap, %.1fMB sys\n", 
 				processedCount, actualOpsCount,
 				float64(processedCount)/float64(actualOpsCount)*100,
 				float64(m.HeapAlloc)/1024/1024, float64(m.Sys)/1024/1024)
+		}
+		
+		// Database health check every 50 operations to prevent connection timeout
+		if processedCount%50 == 0 {
+			// Check database connection health during long-running operations
+			if err := database.EnsureConnection(); err != nil {
+				fmt.Fprintf(os.Stderr, "[WARN] Database connection issue at operation %d/%d: %v\n", processedCount, actualOpsCount, err)
+			} else {
+				fmt.Fprintf(os.Stderr, "[INFO] ✅ Database connection healthy at operation %d/%d\n", processedCount, actualOpsCount)
+			}
 		}
 		
 		// Build schema with error protection and memory optimization
