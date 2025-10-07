@@ -140,8 +140,12 @@ func NewStreamableHTTPServer(server *MCPServer, opts ...StreamableHTTPOption) *S
 func (s *StreamableHTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check for optimized API endpoints first
 	if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/tools") {
-		s.handleToolsAPI(w, r)
-		return
+		// Only use optimized API for direct tools endpoint access (not sub-paths like /tools/call)
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) >= 1 && pathParts[len(pathParts)-1] == "tools" {
+			s.handleToolsAPI(w, r)
+			return
+		}
 	}
 	
 	switch r.Method {
