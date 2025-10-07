@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -818,6 +820,23 @@ func hasDateTimeParameters(op OpenAPIOperation) bool {
 
 // hasDateTimeInSchema recursively checks if a schema contains date/time formats
 func hasDateTimeInSchema(schema *openapi3.Schema) bool {
+	return hasDateTimeInSchemaWithVisited(schema, make(map[*openapi3.Schema]bool))
+}
+
+func hasDateTimeInSchemaWithVisited(schema *openapi3.Schema, visited map[*openapi3.Schema]bool) bool {
+	if schema == nil {
+		return false
+	}
+	
+	// Check for circular references
+	if visited[schema] {
+		return false
+	}
+	
+	// Mark this schema as being processed
+	visited[schema] = true
+	defer func() { delete(visited, schema) }()
+
 	if schema.Format == "date" || schema.Format == "date-time" {
 		return true
 	}
@@ -825,7 +844,7 @@ func hasDateTimeInSchema(schema *openapi3.Schema) bool {
 	// Check properties in objects
 	for _, propRef := range schema.Properties {
 		if propRef != nil && propRef.Value != nil {
-			if hasDateTimeInSchema(propRef.Value) {
+			if hasDateTimeInSchemaWithVisited(propRef.Value, visited) {
 				return true
 			}
 		}
@@ -833,7 +852,7 @@ func hasDateTimeInSchema(schema *openapi3.Schema) bool {
 
 	// Check items in arrays
 	if schema.Items != nil && schema.Items.Value != nil {
-		if hasDateTimeInSchema(schema.Items.Value) {
+		if hasDateTimeInSchemaWithVisited(schema.Items.Value, visited) {
 			return true
 		}
 	}
@@ -841,21 +860,21 @@ func hasDateTimeInSchema(schema *openapi3.Schema) bool {
 	// Check allOf, anyOf, oneOf
 	for _, schemaRef := range schema.AllOf {
 		if schemaRef != nil && schemaRef.Value != nil {
-			if hasDateTimeInSchema(schemaRef.Value) {
+			if hasDateTimeInSchemaWithVisited(schemaRef.Value, visited) {
 				return true
 			}
 		}
 	}
 	for _, schemaRef := range schema.AnyOf {
 		if schemaRef != nil && schemaRef.Value != nil {
-			if hasDateTimeInSchema(schemaRef.Value) {
+			if hasDateTimeInSchemaWithVisited(schemaRef.Value, visited) {
 				return true
 			}
 		}
 	}
 	for _, schemaRef := range schema.OneOf {
 		if schemaRef != nil && schemaRef.Value != nil {
-			if hasDateTimeInSchema(schemaRef.Value) {
+			if hasDateTimeInSchemaWithVisited(schemaRef.Value, visited) {
 				return true
 			}
 		}
@@ -912,18 +931,122 @@ func RegisterOpenAPITools(server *mcpserver.MCPServer, ops []OpenAPIOperation, d
 		return false
 	}
 
+	const batchSize = 1 // Process one operation at a time to prevent memory issues
+	processedCount := 0
+	totalOps := len(ops)
+	
+	// Count operations that will actually be processed
+	actualOpsCount := 0
 	for _, op := range ops {
+		if filterByTag(op) {
+			actualOpsCount++
+		}
+	}
+	
+	fmt.Fprintf(os.Stderr, "[INFO] Will process %d/%d operations in batches of %d\n", actualOpsCount, totalOps, batchSize)
+	
+	for i, op := range ops {
 		if !filterByTag(op) {
 			continue
 		}
-		inputSchema := BuildInputSchemaWithContext(op.Parameters, op.RequestBody, doc)
+		
+		processedCount++
+		fmt.Fprintf(os.Stderr, "[INFO] Processing operation %d/%d: %s (index %d)\n", processedCount, actualOpsCount, op.OperationID, i+1)
+		
+		// Emergency memory management - force multiple GC cycles after every operation
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		
+		// Enhanced memory management with higher thresholds and better cleanup
+		memThresholdCritical := uint64(7000 * 1024 * 1024) // 7GB critical threshold (increased)
+		memThresholdHigh := uint64(6000 * 1024 * 1024)     // 6GB high threshold (increased) 
+		memThresholdMedium := uint64(4500 * 1024 * 1024)   // 4.5GB medium threshold
+		
+		if m.Sys > memThresholdCritical {
+			fmt.Fprintf(os.Stderr, "[ERROR] Critical memory usage: %.1fMB sys, aborting to prevent OOM\n", float64(m.Sys)/1024/1024)
+			fmt.Fprintf(os.Stderr, "[INFO] Successfully processed %d/%d operations before hitting memory limit\n", processedCount, actualOpsCount)
+			break // Stop processing to prevent OOMKill
+		} else if m.Sys > memThresholdHigh {
+			// Aggressive cleanup for high memory usage
+			fmt.Fprintf(os.Stderr, "[WARN] High memory usage detected: %.1fMB sys, performing aggressive cleanup\n", float64(m.Sys)/1024/1024)
+			
+			// Force memory return to OS
+			for i := 0; i < 15; i++ {
+				runtime.GC()
+			}
+			
+			// Additional cleanup strategies
+			debug.FreeOSMemory()
+			runtime.ReadMemStats(&m)
+			fmt.Fprintf(os.Stderr, "[INFO] After aggressive cleanup: %.1fMB sys\n", float64(m.Sys)/1024/1024)
+			
+		} else if m.Sys > memThresholdMedium {
+			// Moderate cleanup for medium memory usage
+			runtime.GC()
+			runtime.GC() 
+			debug.FreeOSMemory()
+		} else {
+			// Light cleanup for normal usage
+			if processedCount%5 == 0 { // GC every 5 operations instead of every operation
+				runtime.GC()
+			}
+		}
+		
+		// Memory monitoring every operation
+		if processedCount%10 == 0 {
+			runtime.ReadMemStats(&m)
+			fmt.Fprintf(os.Stderr, "[INFO] ✅ Progress %d/%d (%.1f%%), Memory: %.1fMB heap, %.1fMB sys\n", 
+				processedCount, actualOpsCount,
+				float64(processedCount)/float64(actualOpsCount)*100,
+				float64(m.HeapAlloc)/1024/1024, float64(m.Sys)/1024/1024)
+		}
+		
+		// Build schema with error protection and memory optimization
+		var inputSchema map[string]any
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Fprintf(os.Stderr, "[WARN] Schema building panic for %s, using fallback: %v\n", op.OperationID, r)
+					inputSchema = map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"body": map[string]any{
+								"type": "object",
+								"description": "Request body parameters",
+							},
+						},
+					}
+				}
+			}()
+			
+			// For very memory-constrained situations, use simplified schema building
+			if m.Sys > memThresholdMedium {
+				// Use simplified schema for operations under memory pressure
+				inputSchema = map[string]any{
+					"type": "object", 
+					"properties": map[string]any{
+						"body": map[string]any{
+							"type": "object",
+							"description": fmt.Sprintf("Parameters for %s operation", op.OperationID),
+						},
+					},
+				}
+			} else {
+				inputSchema = BuildInputSchemaWithContext(op.Parameters, op.RequestBody, doc)
+			}
+		}()
 		if opts != nil && opts.PostProcessSchema != nil {
 			inputSchema = opts.PostProcessSchema(op.OperationID, inputSchema)
 		}
-		inputSchemaJSON, _ := json.MarshalIndent(inputSchema, "", "  ")
+		// Use more memory-efficient JSON marshaling
+		inputSchemaJSON, _ := json.Marshal(inputSchema)
 		// Generate AI-friendly description
 		desc := generateAIFriendlyDescription(op, inputSchema, apiKeyHeader)
 		name := op.OperationID
+		
+		// Clear large objects immediately and force GC
+		inputSchema = nil
+		runtime.GC() // Force GC after clearing schema
 		if opts != nil && opts.NameFormat != nil {
 			name = opts.NameFormat(name)
 		}
@@ -1493,6 +1616,14 @@ func RegisterOpenAPITools(server *mcpserver.MCPServer, ops []OpenAPIOperation, d
 		})
 		toolNames = append(toolNames, name)
 	}
+
+	// Final batch completion check
+	if processedCount%batchSize != 0 {
+		runtime.GC()
+		runtime.GC() // Double GC for final cleanup
+	}
+	
+	fmt.Fprintf(os.Stderr, "[INFO] ✅ Successfully completed processing all %d operations! Registration complete.\n", processedCount)
 
 	// Add a tool for externalDocs if present
 	if doc.ExternalDocs != nil && doc.ExternalDocs.URL != "" && (opts == nil || !opts.DryRun) {

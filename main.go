@@ -321,7 +321,9 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 		}
 
 		// Create MCP server - don't set auth env vars here, let the context function handle it
+		log.Printf("Creating MCP server for %s...", doc.Info.Title)
 		srv := openapi2mcp.NewServer(doc.Info.Title, doc.Info.Version, doc)
+		log.Printf("MCP server created successfully for %s", doc.Info.Title)
 
 		// Create a custom StreamableHTTPServer with database spec-aware auth function
 		streamableServer := server.NewStreamableHTTPServer(srv,
