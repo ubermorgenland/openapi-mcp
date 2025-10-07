@@ -1,6 +1,7 @@
 package server
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -137,6 +138,12 @@ func NewStreamableHTTPServer(server *MCPServer, opts ...StreamableHTTPOption) *S
 
 // ServeHTTP implements the http.Handler interface.
 func (s *StreamableHTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Check for optimized API endpoints first
+	if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/tools") {
+		s.handleToolsAPI(w, r)
+		return
+	}
+	
 	switch r.Method {
 	case http.MethodPost:
 		s.handlePost(w, r)
@@ -623,4 +630,103 @@ func NewTestStreamableHTTPServer(server *MCPServer, opts ...StreamableHTTPOption
 	sseServer := NewStreamableHTTPServer(server, opts...)
 	testServer := httptest.NewServer(sseServer)
 	return testServer
+}
+
+// handleToolsAPI provides an optimized HTTP API for listing tools with compression and caching
+func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	
+	// Apply HTTP context function if available
+	if s.httpContextFunc != nil {
+		ctx = s.httpContextFunc(ctx, r)
+	}
+	
+	// Create a temporary session for tool listing
+	sessionID := uuid.New().String()
+	session := newStreamableHttpSession(sessionID, s.sessionTools)
+	
+	if err := s.server.RegisterSession(ctx, session); err != nil {
+		http.Error(w, fmt.Sprintf("Session registration failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer s.server.UnregisterSession(ctx, sessionID)
+	
+	// Get tools using MCP protocol
+	toolsRequest := mcp.ListToolsRequest{
+		Params: mcp.ListToolsParams{},
+	}
+	
+	result, reqErr := s.server.handleListTools(ctx, "tools-api", toolsRequest)
+	if reqErr != nil {
+		http.Error(w, fmt.Sprintf("Failed to list tools: %v", reqErr.err), http.StatusInternalServerError)
+		return
+	}
+	
+	// Check query parameters for optimization options
+	query := r.URL.Query()
+	compressed := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+	compact := query.Get("compact") == "true"
+	limit := 0
+	if limitStr := query.Get("limit"); limitStr != "" {
+		if parsedLimit, err := json.Number(limitStr).Int64(); err == nil && parsedLimit > 0 {
+			limit = int(parsedLimit)
+		}
+	}
+	
+	// Optimize response based on parameters
+	tools := result.Tools
+	if limit > 0 && len(tools) > limit {
+		tools = tools[:limit]
+		// Add pagination info
+		w.Header().Set("X-Total-Tools", fmt.Sprintf("%d", len(result.Tools)))
+		w.Header().Set("X-Returned-Tools", fmt.Sprintf("%d", limit))
+	}
+	
+	// Set appropriate headers
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=300") // 5 minute cache
+	
+	var responseData []byte
+	var err error
+	
+	if compact {
+		// Return compact format with just name and description
+		compactTools := make([]map[string]interface{}, len(tools))
+		for i, tool := range tools {
+			compactTools[i] = map[string]interface{}{
+				"name":        tool.Name,
+				"description": tool.Description,
+			}
+		}
+		responseData, err = json.Marshal(compactTools)
+	} else {
+		responseData, err = json.Marshal(tools)
+	}
+	
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to serialize tools: %v", err), http.StatusInternalServerError)
+		return
+	}
+	
+	// Apply compression if supported
+	if compressed && len(responseData) > 1024 { // Only compress if > 1KB
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Vary", "Accept-Encoding")
+		
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		
+		w.WriteHeader(http.StatusOK)
+		_, err = gz.Write(responseData)
+		if err != nil {
+			// Log error but don't return error to client as headers are already sent
+			fmt.Printf("Compression error: %v\n", err)
+		}
+	} else {
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(responseData)
+		if err != nil {
+			fmt.Printf("Write error: %v\n", err)
+		}
+	}
 }
