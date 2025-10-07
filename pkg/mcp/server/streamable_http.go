@@ -637,8 +637,8 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	
 	// Apply HTTP context function if available
-	if s.httpContextFunc != nil {
-		ctx = s.httpContextFunc(ctx, r)
+	if s.contextFunc != nil {
+		ctx = s.contextFunc(ctx, r)
 	}
 	
 	// Create a temporary session for tool listing
@@ -652,9 +652,7 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 	defer s.server.UnregisterSession(ctx, sessionID)
 	
 	// Get tools using MCP protocol
-	toolsRequest := mcp.ListToolsRequest{
-		Params: mcp.ListToolsParams{},
-	}
+	toolsRequest := mcp.ListToolsRequest{}
 	
 	result, reqErr := s.server.handleListTools(ctx, "tools-api", toolsRequest)
 	if reqErr != nil {
