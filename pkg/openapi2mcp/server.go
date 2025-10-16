@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -115,7 +116,16 @@ func (c *authContext) restoreEnv() {
 func NewServer(name, version string, doc *openapi3.T) *mcpserver.MCPServer {
 	ops := ExtractOpenAPIOperations(doc)
 	srv := mcpserver.NewMCPServer(name, version)
+	fmt.Fprintf(os.Stderr, "[INFO] Registering %d operations for %s (memory optimized)\n", len(ops), name)
+	
+	// Force initial GC before processing large operations
+	runtime.GC()
+	
 	RegisterOpenAPITools(srv, ops, doc, nil)
+	
+	// Final cleanup
+	runtime.GC()
+	fmt.Fprintf(os.Stderr, "[INFO] Server creation complete for %s\n", name)
 	return srv
 }
 

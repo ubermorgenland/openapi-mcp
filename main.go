@@ -321,7 +321,20 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 		}
 
 		// Create MCP server - don't set auth env vars here, let the context function handle it
+		// Ensure database connection is healthy before long-running MCP server creation
+		if err := database.EnsureConnection(); err != nil {
+			log.Printf("Failed to ensure database connection before creating MCP server for %s: %v", doc.Info.Title, err)
+			continue
+		}
+		
+		log.Printf("Creating MCP server for %s...", doc.Info.Title)
 		srv := openapi2mcp.NewServer(doc.Info.Title, doc.Info.Version, doc)
+		log.Printf("MCP server created successfully for %s", doc.Info.Title)
+		
+		// Re-check database connection after long-running operation
+		if err := database.EnsureConnection(); err != nil {
+			log.Printf("Database connection lost after creating MCP server for %s: %v", doc.Info.Title, err)
+		}
 
 		// Create a custom StreamableHTTPServer with database spec-aware auth function
 		streamableServer := server.NewStreamableHTTPServer(srv,
