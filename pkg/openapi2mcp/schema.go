@@ -130,6 +130,10 @@ func resolveSchemaRef(schemaRef *openapi3.SchemaRef, doc *openapi3.T) *openapi3.
 // mergeOneOfSchemas creates a unified schema that accepts any of the oneOf variants
 // This provides better MCP compatibility by creating a single schema with all possible properties
 func mergeOneOfSchemas(oneOf []*openapi3.SchemaRef, doc *openapi3.T) map[string]any {
+	return mergeOneOfSchemasWithVisited(oneOf, doc, make(map[*openapi3.Schema]bool))
+}
+
+func mergeOneOfSchemasWithVisited(oneOf []*openapi3.SchemaRef, doc *openapi3.T, visited map[*openapi3.Schema]bool) map[string]any {
 	merged := map[string]any{
 		"type": "object",
 	}
@@ -151,7 +155,7 @@ func mergeOneOfSchemas(oneOf []*openapi3.SchemaRef, doc *openapi3.T) map[string]
 		// Extract properties from this schema
 		if schema.Properties != nil {
 			for propName, propSchemaRef := range schema.Properties {
-				if propSchema := extractPropertyWithContext(propSchemaRef, doc); propSchema != nil {
+				if propSchema := extractPropertyWithContextAndVisited(propSchemaRef, doc, visited); propSchema != nil {
 					allProperties[propName] = propSchema
 				}
 			}
@@ -220,17 +224,35 @@ func extractProperty(s *openapi3.SchemaRef) map[string]any {
 // extractPropertyWithContext recursively extracts a property schema from an OpenAPI SchemaRef with document context.
 // Handles allOf, oneOf, anyOf, discriminator, default, example, and basic OpenAPI 3.1 features.
 func extractPropertyWithContext(s *openapi3.SchemaRef, doc *openapi3.T) map[string]any {
+	return extractPropertyWithContextAndVisited(s, doc, make(map[*openapi3.Schema]bool))
+}
+
+func extractPropertyWithContextAndVisited(s *openapi3.SchemaRef, doc *openapi3.T, visited map[*openapi3.Schema]bool) map[string]any {
 	if s == nil || s.Value == nil {
 		return nil
 	}
 
 	val := s.Value
+	
+	// Check for circular references
+	if visited[val] {
+		// Return a reference or basic type to break the cycle
+		if val.Type != nil && len(*val.Type) > 0 {
+			return map[string]any{"type": (*val.Type)[0]}
+		}
+		return map[string]any{"type": "object"}
+	}
+	
+	// Mark this schema as being processed
+	visited[val] = true
+	defer func() { delete(visited, val) }()
+	
 	prop := map[string]any{}
 	// Handle allOf (merge all subschemas)
 	if len(val.AllOf) > 0 {
 		merged := map[string]any{}
 		for _, sub := range val.AllOf {
-			subProp := extractPropertyWithContext(sub, doc)
+			subProp := extractPropertyWithContextAndVisited(sub, doc, visited)
 			for k, v := range subProp {
 				merged[k] = v
 			}
@@ -260,14 +282,14 @@ func extractPropertyWithContext(s *openapi3.SchemaRef, doc *openapi3.T) map[stri
 			return unionSchema
 		} else {
 			// Use enhanced oneOf handling that merges schemas for better MCP compatibility
-			return mergeOneOfSchemas(val.OneOf, doc)
+			return mergeOneOfSchemasWithVisited(val.OneOf, doc, visited)
 		}
 	}
 	if len(val.AnyOf) > 0 {
 		fmt.Fprintf(os.Stderr, "[WARN] anyOf used in schema at %p. Only basic support is provided.\n", val)
 		anyOf := []any{}
 		for _, sub := range val.AnyOf {
-			anyOf = append(anyOf, extractPropertyWithContext(sub, doc))
+			anyOf = append(anyOf, extractPropertyWithContextAndVisited(sub, doc, visited))
 		}
 		prop["anyOf"] = anyOf
 	}
@@ -300,7 +322,7 @@ func extractPropertyWithContext(s *openapi3.SchemaRef, doc *openapi3.T) map[stri
 	if val.Type != nil && val.Type.Is("object") && val.Properties != nil {
 		objProps := map[string]any{}
 		for name, sub := range val.Properties {
-			objProps[name] = extractPropertyWithContext(sub, doc)
+			objProps[name] = extractPropertyWithContextAndVisited(sub, doc, visited)
 		}
 		prop["properties"] = objProps
 		if len(val.Required) > 0 {
@@ -309,7 +331,7 @@ func extractPropertyWithContext(s *openapi3.SchemaRef, doc *openapi3.T) map[stri
 	}
 	// Array items
 	if val.Type != nil && val.Type.Is("array") && val.Items != nil {
-		prop["items"] = extractPropertyWithContext(val.Items, doc)
+		prop["items"] = extractPropertyWithContextAndVisited(val.Items, doc, visited)
 	}
 	return prop
 }
@@ -371,18 +393,55 @@ func BuildInputSchemaWithContext(params openapi3.Parameters, requestBody *openap
 			if idx := strings.IndexByte(mtName, ';'); idx > 0 {
 				baseMT = strings.TrimSpace(mtName[:idx])
 			}
-			if baseMT != "application/json" && baseMT != "application/vnd.api+json" {
-				fmt.Fprintf(os.Stderr, "[WARN] Request body uses media type '%s'. Only 'application/json' and 'application/vnd.api+json' are fully supported.\n", mtName)
+			supportedTypes := []string{
+				"application/json",
+				"application/vnd.api+json", 
+				"application/xml",
+				"text/xml",
+				"text/plain",
+				"multipart/form-data",
+				"application/x-www-form-urlencoded",
+			}
+			
+			isSupported := false
+			for _, supportedType := range supportedTypes {
+				if baseMT == supportedType {
+					isSupported = true
+					break
+				}
+			}
+			
+			if !isSupported {
+				fmt.Fprintf(os.Stderr, "[WARN] Request body uses media type '%s'. Supported types: %v\n", mtName, supportedTypes)
 			}
 		}
-		// Try application/json first, then application/vnd.api+json (including with parameters)
-		mt := getContentByType(requestBody.Value.Content, "application/json")
-		if mt == nil {
-			mt = getContentByType(requestBody.Value.Content, "application/vnd.api+json")
+		// Try to find a suitable content type in order of preference
+		var mt *openapi3.MediaType
+		var bodyDescription string
+		
+		preferredTypes := []struct {
+			contentType string
+			description string
+		}{
+			{"application/json", "The JSON request body."},
+			{"application/vnd.api+json", "The JSON API request body."},
+			{"application/xml", "The XML request body (provide as string)."},
+			{"text/xml", "The XML request body (provide as string)."},
+			{"text/plain", "The plain text request body."},
+			{"multipart/form-data", "The form data request body (provide as object with fields)."},
+			{"application/x-www-form-urlencoded", "The URL-encoded form request body (provide as object)."},
 		}
+		
+		for _, pref := range preferredTypes {
+			if mt = getContentByType(requestBody.Value.Content, pref.contentType); mt != nil {
+				bodyDescription = pref.description
+				break
+			}
+		}
+		
 		if mt != nil && mt.Schema != nil && mt.Schema.Value != nil {
 			bodyProp := extractPropertyWithContext(mt.Schema, doc)
-			bodyProp["description"] = "The JSON request body."
+			bodyProp["description"] = bodyDescription
 			properties["requestBody"] = bodyProp
 			if requestBody.Value.Required {
 				required = append(required, "requestBody")

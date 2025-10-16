@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
@@ -36,9 +37,11 @@ func Connect() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
-	// Set connection pool settings
+	// Set connection pool settings for long-running operations
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(30 * time.Minute) // Connections live for 30 minutes max
+	db.SetConnMaxIdleTime(10 * time.Minute) // Idle connections timeout after 10 minutes
 
 	log.Printf("Database connected successfully: %s", strings.Split(databaseURL, "@")[0]+"@[HIDDEN]")
 
@@ -61,6 +64,29 @@ func Ping() error {
 		return fmt.Errorf("database connection is not initialized")
 	}
 	return DB.Ping()
+}
+
+// EnsureConnection ensures the database connection is healthy, reconnecting if necessary
+func EnsureConnection() error {
+	if DB == nil {
+		log.Printf("Database connection is nil, attempting to reconnect...")
+		_, err := Connect()
+		return err
+	}
+
+	// Test connection health
+	if err := DB.Ping(); err != nil {
+		log.Printf("Database connection unhealthy (%v), attempting to reconnect...", err)
+		// Close the stale connection
+		DB.Close()
+		DB = nil
+		
+		// Attempt to reconnect
+		_, err := Connect()
+		return err
+	}
+
+	return nil
 }
 
 // InitializeDatabase connects to the database and runs migrations
