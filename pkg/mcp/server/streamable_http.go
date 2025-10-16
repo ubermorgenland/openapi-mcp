@@ -312,6 +312,40 @@ func (s *StreamableHTTPServer) handlePost(w http.ResponseWriter, r *http.Request
 			s.logger.Errorf("Failed to write final SSE response event: %v", err)
 		}
 	} else {
+		// Check if compression should be used for large responses
+		shouldCompress := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+		
+		if shouldCompress {
+			// Marshal response to check size
+			responseData, err := json.Marshal(response)
+			if err != nil {
+				s.logger.Errorf("Failed to marshal response: %v", err)
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			
+			// Apply compression if response is larger than 1KB
+			if len(responseData) > 1024 {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("Content-Encoding", "gzip")
+				w.Header().Set("Vary", "Accept-Encoding")
+				if isInitializeRequest && sessionID != "" {
+					w.Header().Set(headerKeySessionID, sessionID)
+				}
+				
+				gz := gzip.NewWriter(w)
+				defer gz.Close()
+				
+				w.WriteHeader(http.StatusOK)
+				_, err = gz.Write(responseData)
+				if err != nil {
+					s.logger.Errorf("Compression error: %v", err)
+				}
+				return
+			}
+		}
+		
+		// Fallback to uncompressed response
 		w.Header().Set("Content-Type", "application/json")
 		if isInitializeRequest && sessionID != "" {
 			// send the session ID back to the client
@@ -666,8 +700,12 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 	
 	// Check query parameters for optimization options
 	query := r.URL.Query()
-	compressed := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
-	compact := query.Get("compact") == "true"
+	// Enable compression by default, allow explicit override
+	compressedParam := query.Get("compressed")
+	compressed := compressedParam == "" || compressedParam == "true" || strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+	// Use compact mode by default for tools endpoint, allow explicit override
+	compactParam := query.Get("compact")
+	compact := compactParam == "" || compactParam == "true"
 	limit := 0
 	if limitStr := query.Get("limit"); limitStr != "" {
 		if parsedLimit, err := json.Number(limitStr).Int64(); err == nil && parsedLimit > 0 {
@@ -695,9 +733,40 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 		// Return compact format with just name and description
 		compactTools := make([]map[string]interface{}, len(tools))
 		for i, tool := range tools {
+			// Sanitize description to ensure valid JSON
+			sanitizedDesc := strings.ReplaceAll(tool.Description, "\x00", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x01", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x02", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x03", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x04", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x05", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x06", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x07", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x08", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x0b", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x0c", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x0e", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x0f", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x10", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x11", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x12", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x13", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x14", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x15", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x16", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x17", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x18", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x19", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1a", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1b", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1c", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1d", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1e", "")
+			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1f", "")
+			
 			compactTools[i] = map[string]interface{}{
 				"name":        tool.Name,
-				"description": tool.Description,
+				"description": sanitizedDesc,
 			}
 		}
 		responseData, err = json.Marshal(compactTools)
