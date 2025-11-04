@@ -212,7 +212,7 @@ bin/spec-manager activate 1
 bin/spec-manager deactivate 2
 
 # Set or update API key tokens
-bin/spec-manager set-token 1 "sk-1234567890abcdef"
+bin/spec-manager set-token 1 "YOUR_API_KEY_HERE"
 bin/spec-manager set-token 2 ""  # Clear token
 
 # View only active specs
@@ -231,7 +231,7 @@ curl -X POST http://localhost:8090/specs \
     "name": "my-api",
     "endpoint_path": "/my-api",
     "spec_content": "{\"openapi\":\"3.0.0\"...}",
-    "api_key_token": "sk-mytoken-123456789",
+    "api_key_token": "YOUR_API_KEY_HERE",
     "active": true
   }'
 
@@ -245,7 +245,7 @@ curl -X POST http://localhost:8090/specs/1/deactivate
 # Update API key token
 curl -X PUT http://localhost:8090/specs/1/token \
   -H "Content-Type: application/json" \
-  -d '{"api_key_token": "sk-new-token-123456789"}'
+  -d '{"api_key_token": "YOUR_NEW_API_KEY_HERE"}'
 ```
 
 See [SPEC_API_EXAMPLES.md](SPEC_API_EXAMPLES.md) for comprehensive API examples.
@@ -291,15 +291,15 @@ This allows you to:
 **Example:**
 ```sh
 # Set tokens for different authentication types
-bin/spec-manager set-token 1 "sk-weather-api-12345"           # API key for Weather
-bin/spec-manager set-token 5 "pplx-bearer-token-67890"       # Bearer token for Perplexity
+bin/spec-manager set-token 1 "YOUR_WEATHER_API_KEY"           # API key for Weather
+bin/spec-manager set-token 5 "YOUR_PERPLEXITY_BEARER_TOKEN"       # Bearer token for Perplexity
 
 # Start server - automatically detects and applies correct auth type
 export DATABASE_URL="postgresql://user:pass@localhost/db" 
 bin/openapi-mcp
 
-# Weather API uses "sk-weather-api-12345" as API_KEY (detected from spec)
-# Perplexity API uses "pplx-bearer-token-67890" as BEARER_TOKEN (detected from spec)
+# Weather API uses "YOUR_WEATHER_API_KEY" as API_KEY (detected from spec)
+# Perplexity API uses "YOUR_PERPLEXITY_BEARER_TOKEN" as BEARER_TOKEN (detected from spec)
 # No need to specify authentication type - it's automatic!
 ```
 

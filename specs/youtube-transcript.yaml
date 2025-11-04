@@ -12,15 +12,16 @@ components:
     RapidAPIKey:
       type: apiKey
       in: header
-      name: x-rapidapi-key
+      name: X-RapidAPI-Key
       description: Your RapidAPI key.
   parameters:
     RapidAPIHostHeader:
-      name: x-rapidapi-host
+      name: X-RapidAPI-Host
       in: header
       required: true
       schema:
         type: string
+        default: youtube-transcript3.p.rapidapi.com
         example: youtube-transcript3.p.rapidapi.com
       description: The RapidAPI host for the YouTube Transcript service.
   schemas:

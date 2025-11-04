@@ -511,7 +511,7 @@
           "api_key_token": {
             "type": "string",
             "description": "API key token for this specification",
-            "example": "pk-petstore-abc123xyz789"
+            "example": "YOUR_API_KEY_HERE"
           },
           "active": {
             "type": "boolean",

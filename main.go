@@ -21,6 +21,7 @@ import (
 	"github.com/ubermorgenland/openapi-mcp/pkg/mcp/server"
 	"github.com/ubermorgenland/openapi-mcp/pkg/models"
 	"github.com/ubermorgenland/openapi-mcp/pkg/openapi2mcp"
+	serverPkg "github.com/ubermorgenland/openapi-mcp/pkg/server"
 	"github.com/ubermorgenland/openapi-mcp/pkg/services"
 )
 
@@ -77,10 +78,53 @@ type SpecReloadResponse struct {
 	Error        string   `json:"error,omitempty"`
 }
 
-// customAuthContextFunc creates a secure, request-scoped authentication context
-func customAuthContextFunc(ctx context.Context, r *http.Request, doc *openapi3.T, spec *models.OpenAPISpec) context.Context {
+// secureAuthContextFunc creates a secure, request-scoped authentication context without global state mutation
+func secureAuthContextFunc(ctx context.Context, r *http.Request, doc *openapi3.T, spec *models.OpenAPISpec) context.Context {
+	// Debug: Log incoming request headers for auth debugging
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		headerPreview := authHeader
+		if len(headerPreview) > 30 {
+			headerPreview = headerPreview[:30]
+		}
+		log.Printf("DEBUG: secureAuthContextFunc received Authorization header: %s...", headerPreview)
+		
+		// Force Bearer token extraction if not working through normal flow
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			bearerToken := strings.TrimPrefix(authHeader, "Bearer ")
+			tokenPreview := bearerToken
+			if len(tokenPreview) > 20 {
+				tokenPreview = tokenPreview[:20]
+			}
+			log.Printf("DEBUG: Directly extracted Bearer token: %s...", tokenPreview)
+			
+			// Create authentication context and manually set the token
+			authCtx := auth.CreateAuthContext(r, doc, spec)
+			if authCtx.Token == "" {
+				log.Printf("DEBUG: Normal extraction failed, manually setting Bearer token")
+				authCtx.Token = bearerToken
+			}
+			
+			// Add auth context to request context - this is secure and thread-safe
+			ctx = auth.WithAuthContext(ctx, authCtx)
+			return ctx
+		}
+	} else {
+		log.Printf("DEBUG: secureAuthContextFunc - NO Authorization header found in request")
+	}
+	
 	// Create authentication context for this request
 	authCtx := auth.CreateAuthContext(r, doc, spec)
+	
+	// Debug: Log the resulting auth context token
+	if authCtx.Token != "" {
+		tokenPreview := authCtx.Token
+		if len(tokenPreview) > 20 {
+			tokenPreview = tokenPreview[:20]
+		}
+		log.Printf("DEBUG: secureAuthContextFunc extracted token: %s...", tokenPreview)
+	} else {
+		log.Printf("DEBUG: secureAuthContextFunc - NO token extracted from headers")
+	}
 
 	// If no spec provided, try to get it from state manager
 	if spec == nil && authStateManager != nil {
@@ -94,35 +138,15 @@ func customAuthContextFunc(ctx context.Context, r *http.Request, doc *openapi3.T
 		}
 	}
 
-	// Add auth context to request context
+	// Add auth context to request context - this is secure and thread-safe
 	ctx = auth.WithAuthContext(ctx, authCtx)
-
-	// Apply legacy environment variable setup for backward compatibility
-	// This is temporary until the MCP library is updated to use context-based auth
-	setupLegacyEnvVars(authCtx)
 
 	return ctx
 }
 
-// setupLegacyEnvVars sets environment variables for backward compatibility
-// TODO: Remove this when MCP library supports context-based authentication
-func setupLegacyEnvVars(authCtx *auth.AuthContext) {
-	if authCtx.Token == "" {
-		return
-	}
-
-	switch authCtx.AuthType {
-	case "bearer":
-		os.Setenv("BEARER_TOKEN", authCtx.Token)
-	case "basic":
-		os.Setenv("BASIC_AUTH", authCtx.Token)
-	case "apiKey":
-		os.Setenv("API_KEY", authCtx.Token)
-		if authCtx.Endpoint != "" {
-			os.Setenv(authCtx.Endpoint+"_API_KEY", authCtx.Token)
-		}
-	}
-}
+// SECURITY FIX: Removed setupLegacyEnvVars function that was mutating global environment variables
+// This was a critical security vulnerability that could cause race conditions in concurrent environments
+// Authentication is now handled securely through request context without global state mutation
 
 
 
@@ -138,7 +162,9 @@ func getEndpointFromFilename(filename string) string {
 // loadSpecsFromDatabase loads specs from database and returns them with a hash for change detection
 func loadSpecsFromDatabase() ([]*models.OpenAPISpec, string, error) {
 	if specLoader == nil {
-		return nil, "", fmt.Errorf("spec loader not initialized")
+		err := serverPkg.NewError(serverPkg.ErrorTypeInternal, "spec loader not initialized", "")
+		err.LogError()
+		return nil, "", err
 	}
 
 	specs, err := specLoader.GetActiveSpecs()
@@ -299,8 +325,8 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 			continue
 		}
 
-		// Log the authentication info
-		schemeName, authType, authPath := auth.ExtractAuthSchemeFromSpec(doc)
+		// Log the authentication info with proper header casing from raw spec content
+		schemeName, authType, authPath := auth.ExtractAuthSchemeFromSpecWithContent(doc, spec.SpecContent)
 		if authPath != "" {
 			log.Printf("%s API: Found security scheme '%s' with %s authentication: %s", endpoint, schemeName, authType, authPath)
 			// Show database token status and how it will be used
@@ -327,9 +353,9 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 			continue
 		}
 		
-		log.Printf("Creating MCP server for %s...", doc.Info.Title)
-		srv := openapi2mcp.NewServer(doc.Info.Title, doc.Info.Version, doc)
-		log.Printf("MCP server created successfully for %s", doc.Info.Title)
+		log.Printf("Creating MCP server for %s with database authentication...", doc.Info.Title)
+		srv := openapi2mcp.NewServerWithDatabase(doc.Info.Title, doc.Info.Version, doc, spec)
+		log.Printf("Database-aware MCP server created successfully for %s", doc.Info.Title)
 		
 		// Re-check database connection after long-running operation
 		if err := database.EnsureConnection(); err != nil {
@@ -340,15 +366,29 @@ func createSpecEndpoints(specs []*models.OpenAPISpec) ([]string, error) {
 		streamableServer := server.NewStreamableHTTPServer(srv,
 			server.WithEndpointPath("/"+endpoint),
 			server.WithHTTPContextFunc(func(ctx context.Context, r *http.Request) context.Context {
-				return customAuthContextFunc(ctx, r, doc, spec)
+				return secureAuthContextFunc(ctx, r, doc, spec)
 			}),
 		)
 
-		// Mount the server at the endpoint path
+		// Create a custom SSE Server with database spec-aware auth function
+		sseServer := server.NewSSEServer(srv,
+			server.WithStaticBasePath("/"+endpoint),
+			server.WithSSEEndpoint("/sse"),
+			server.WithMessageEndpoint("/message"),
+			server.WithSSEContextFunc(func(ctx context.Context, r *http.Request) context.Context {
+				return secureAuthContextFunc(ctx, r, doc, spec)
+			}),
+		)
+
+		// Mount the StreamableHTTP server at the main endpoint path
 		newMux.Handle("/"+endpoint, streamableServer)
 		newMux.Handle("/"+endpoint+"/", streamableServer)
 
-		log.Printf("Mounted %s API at /%s", doc.Info.Title, endpoint)
+		// Mount the SSE server endpoints
+		newMux.Handle("/"+endpoint+"/sse", sseServer.SSEHandler())
+		newMux.Handle("/"+endpoint+"/message", sseServer.MessageHandler())
+
+		log.Printf("Mounted %s API at /%s (StreamableHTTP) and /%s/sse + /%s/message (SSE)", doc.Info.Title, endpoint, endpoint, endpoint)
 		mountedAPIs = append(mountedAPIs, endpoint)
 	}
 
@@ -838,7 +878,9 @@ func startServerWithGracefulShutdown(srv *http.Server) error {
 	// Wait for either interrupt signal or server error
 	select {
 	case err := <-serverErrors:
-		return fmt.Errorf("server error: %v", err)
+		serverErr := serverPkg.Wrap(err, serverPkg.ErrorTypeNetwork, "HTTP server error")
+		serverErr.LogError()
+		return serverErr
 	case sig := <-quit:
 		log.Printf("Received signal %v, initiating graceful shutdown...", sig)
 
@@ -852,8 +894,9 @@ func startServerWithGracefulShutdown(srv *http.Server) error {
 
 		// Attempt graceful shutdown
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("Server shutdown error: %v", err)
-			return fmt.Errorf("server shutdown error: %v", err)
+			shutdownErr := serverPkg.Wrap(err, serverPkg.ErrorTypeInternal, "server shutdown failed")
+			shutdownErr.LogError()
+			return shutdownErr
 		}
 
 		log.Printf("Server shut down gracefully")
@@ -996,8 +1039,22 @@ func main() {
 			continue
 		}
 
-		// Log the authentication scheme extracted from spec
-		schemeName, authType, authPath := auth.ExtractAuthSchemeFromSpec(doc)
+		// Read raw spec content for dynamic header casing preservation
+		rawContent, err := os.ReadFile(specFile)
+		if err != nil {
+			log.Printf("Failed to read raw content for %s: %v", filename, err)
+			continue
+		}
+
+		// Create a mock database spec with raw content for header casing preservation
+		mockDBSpec := &models.OpenAPISpec{
+			Name:         endpoint,
+			SpecContent:  string(rawContent),
+			EndpointPath: "/" + endpoint,
+		}
+
+		// Log the authentication scheme extracted from spec with proper header casing
+		schemeName, authType, authPath := auth.ExtractAuthSchemeFromSpecWithContent(doc, string(rawContent))
 		if authPath != "" {
 			log.Printf("%s API: Found security scheme '%s' with %s authentication: %s", endpoint, schemeName, authType, authPath)
 			// Add to required environment variables
@@ -1031,22 +1088,37 @@ func main() {
 				}
 				return "NOT_SET"
 			}())
-		srv := openapi2mcp.NewServer(doc.Info.Title, doc.Info.Version, doc)
+		srv := openapi2mcp.NewServerWithDatabase(doc.Info.Title, doc.Info.Version, doc, mockDBSpec)
 
 		// Create a custom StreamableHTTPServer with the package's built-in auth function
-		// For file-based loading, pass nil spec to use environment variables
+		// For file-based loading, pass mock database spec to preserve header casing
 		streamableServer := server.NewStreamableHTTPServer(srv,
 			server.WithEndpointPath("/"+endpoint),
 			server.WithHTTPContextFunc(func(ctx context.Context, r *http.Request) context.Context {
-				return customAuthContextFunc(ctx, r, doc, nil)
+				return secureAuthContextFunc(ctx, r, doc, mockDBSpec)
 			}),
 		)
 
-		// Mount the server at the endpoint path
+		// Create a custom SSE Server with the package's built-in auth function
+		// For file-based loading, pass mock database spec to preserve header casing
+		sseServer := server.NewSSEServer(srv,
+			server.WithStaticBasePath("/"+endpoint),
+			server.WithSSEEndpoint("/sse"),
+			server.WithMessageEndpoint("/message"),
+			server.WithSSEContextFunc(func(ctx context.Context, r *http.Request) context.Context {
+				return secureAuthContextFunc(ctx, r, doc, mockDBSpec)
+			}),
+		)
+
+		// Mount the StreamableHTTP server at the main endpoint path
 		mux.Handle("/"+endpoint, streamableServer)
 		mux.Handle("/"+endpoint+"/", streamableServer)
 
-		log.Printf("Mounted %s API at /%s", doc.Info.Title, endpoint)
+		// Mount the SSE server endpoints
+		mux.Handle("/"+endpoint+"/sse", sseServer.SSEHandler())
+		mux.Handle("/"+endpoint+"/message", sseServer.MessageHandler())
+
+		log.Printf("Mounted %s API at /%s (StreamableHTTP) and /%s/sse + /%s/message (SSE)", doc.Info.Title, endpoint, endpoint, endpoint)
 	}
 
 	// Log required environment variables

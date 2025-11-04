@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -117,27 +118,43 @@ type StreamableHTTPServer struct {
 	sessionIdManager        SessionIdManager
 	listenHeartbeatInterval time.Duration
 	logger                  util.Logger
+	
+	// Session cleanup
+	cleanupCtx    context.Context
+	cleanupCancel context.CancelFunc
+	cleanupDone   chan struct{}
 }
 
 // NewStreamableHTTPServer creates a new streamable-http server instance
 func NewStreamableHTTPServer(server *MCPServer, opts ...StreamableHTTPOption) *StreamableHTTPServer {
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &StreamableHTTPServer{
 		server:           server,
 		sessionTools:     newSessionToolsStore(),
 		endpointPath:     "/mcp",
 		sessionIdManager: &InsecureStatefulSessionIdManager{},
 		logger:           util.DefaultLogger(),
+		cleanupCtx:       ctx,
+		cleanupCancel:    cancel,
+		cleanupDone:      make(chan struct{}),
 	}
 
 	// Apply all options
 	for _, opt := range opts {
 		opt(s)
 	}
+	
+	// Start cleanup goroutine
+	go s.runSessionCleanup()
+	
 	return s
 }
 
 // ServeHTTP implements the http.Handler interface.
 func (s *StreamableHTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Always log incoming requests for debugging
+	// TODO: Make this configurable for production
+	s.logIncomingRequest(r)
 	// Check for optimized API endpoints first
 	if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/tools") {
 		// Only use optimized API for direct tools endpoint access (not sub-paths like /tools/call)
@@ -180,6 +197,21 @@ func (s *StreamableHTTPServer) Start(addr string) error {
 // Shutdown gracefully stops the server, closing all active sessions
 // and shutting down the HTTP server.
 func (s *StreamableHTTPServer) Shutdown(ctx context.Context) error {
+	// Stop cleanup goroutine if it exists
+	if s.cleanupCancel != nil {
+		s.cleanupCancel()
+		
+		// Wait for cleanup to finish with timeout
+		select {
+		case <-s.cleanupDone:
+			s.logger.Infof("Session cleanup goroutine stopped")
+		case <-time.After(5 * time.Second):
+			s.logger.Infof("Session cleanup goroutine stop timeout")
+		case <-ctx.Done():
+			s.logger.Infof("Session cleanup stopped due to context cancellation")
+		}
+	}
+	
 	// shutdown the server if needed (may use as a http.Handler)
 	s.mu.RLock()
 	srv := s.httpServer
@@ -195,6 +227,30 @@ func (s *StreamableHTTPServer) Shutdown(ctx context.Context) error {
 const (
 	headerKeySessionID = "Mcp-Session-Id"
 )
+
+// extractAuthHeaders extracts authentication-related headers from the HTTP request
+func extractAuthHeaders(headers http.Header) http.Header {
+	authHeaders := make(http.Header)
+	
+	// List of header keys that should be preserved for authentication
+	authHeaderKeys := []string{
+		"Authorization",
+		"X-API-Key", 
+		"X-Auth-Token",
+		"Bearer",
+		"Token",
+		"API-Key",
+		"Auth-Token",
+	}
+	
+	for _, key := range authHeaderKeys {
+		if values := headers.Values(key); len(values) > 0 {
+			authHeaders[key] = values
+		}
+	}
+	
+	return authHeaders
+}
 
 func (s *StreamableHTTPServer) handlePost(w http.ResponseWriter, r *http.Request) {
 	// post request carry request/notification message
@@ -241,9 +297,46 @@ func (s *StreamableHTTPServer) handlePost(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Session terminated", http.StatusNotFound)
 			return
 		}
+		
+		// Touch session to renew its expiration when accessed
+		if sessionID != "" {
+			if err := s.server.TouchSession(sessionID, DefaultSessionTimeout); err != nil {
+				// Log error but don't fail the request - session might not support expiration
+				s.logger.Infof("Failed to touch session %s: %v", sessionID, err)
+			}
+		}
 	}
 
-	session := newStreamableHttpSession(sessionID, s.sessionTools)
+	// Extract authentication headers from the request
+	authHeaders := extractAuthHeaders(r.Header)
+	session := newStreamableHttpSessionWithHeaders(sessionID, s.sessionTools, authHeaders)
+	
+	// Debug: Log extracted headers
+	if len(authHeaders) > 0 {
+		for key, values := range authHeaders {
+			log.Printf("DEBUG: Extracted session auth header %s: %s", key, strings.Join(values, ", "))
+		}
+	}
+
+	// Register the session with the MCP server so authentication can find it
+	sessionRegistered := false
+	if sessionID != "" {
+		if err := s.server.RegisterSession(r.Context(), session); err != nil {
+			// If session already exists, that's fine for streamable HTTP (ephemeral sessions)
+			if err != ErrSessionExists {
+				s.logger.Errorf("Failed to register session %s: %v", sessionID, err)
+			}
+		} else {
+			sessionRegistered = true
+		}
+	}
+	
+	// Clean up session when request is done
+	defer func() {
+		if sessionRegistered && sessionID != "" {
+			s.server.UnregisterSession(context.Background(), sessionID)
+		}
+	}()
 
 	// Set the client context before handling the message
 	ctx := s.server.WithContext(r.Context(), session)
@@ -565,13 +658,35 @@ type streamableHttpSession struct {
 	sessionID           string
 	notificationChannel chan mcp.JSONRPCNotification // server -> client notifications
 	tools               *sessionToolsStore
+	authHeaders         http.Header                   // preserve authentication headers from original request
+	createdAt           time.Time                     // when the session was created
+	expiresAt           time.Time                     // when the session expires
 }
 
+// Default session timeout (configurable)
+const DefaultSessionTimeout = 24 * time.Hour
+
 func newStreamableHttpSession(sessionID string, toolStore *sessionToolsStore) *streamableHttpSession {
+	now := time.Now()
 	return &streamableHttpSession{
 		sessionID:           sessionID,
 		notificationChannel: make(chan mcp.JSONRPCNotification, 100),
 		tools:               toolStore,
+		authHeaders:         make(http.Header),
+		createdAt:           now,
+		expiresAt:           now.Add(DefaultSessionTimeout),
+	}
+}
+
+func newStreamableHttpSessionWithHeaders(sessionID string, toolStore *sessionToolsStore, authHeaders http.Header) *streamableHttpSession {
+	now := time.Now()
+	return &streamableHttpSession{
+		sessionID:           sessionID,
+		notificationChannel: make(chan mcp.JSONRPCNotification, 100),
+		tools:               toolStore,
+		authHeaders:         authHeaders,
+		createdAt:           now,
+		expiresAt:           now.Add(DefaultSessionTimeout),
 	}
 }
 
@@ -603,7 +718,125 @@ func (s *streamableHttpSession) SetSessionTools(tools map[string]ServerTool) {
 	s.tools.set(s.sessionID, tools)
 }
 
+func (s *streamableHttpSession) GetAuthHeaders() http.Header {
+	return s.authHeaders
+}
+
+func (s *streamableHttpSession) SetAuthHeaders(headers http.Header) {
+	s.authHeaders = headers
+}
+
+// SessionWithExpiration interface methods
+func (s *streamableHttpSession) GetCreatedAt() time.Time {
+	return s.createdAt
+}
+
+func (s *streamableHttpSession) GetExpiresAt() time.Time {
+	return s.expiresAt
+}
+
+func (s *streamableHttpSession) IsExpired() bool {
+	return time.Now().After(s.expiresAt)
+}
+
+func (s *streamableHttpSession) Renew(duration time.Duration) {
+	s.expiresAt = time.Now().Add(duration)
+}
+
 var _ SessionWithTools = (*streamableHttpSession)(nil)
+var _ SessionWithAuthHeaders = (*streamableHttpSession)(nil)
+var _ SessionWithExpiration = (*streamableHttpSession)(nil)
+
+// Session cleanup interval
+const SessionCleanupInterval = 5 * time.Minute
+
+// runSessionCleanup runs a background goroutine to clean up expired sessions
+func (s *StreamableHTTPServer) runSessionCleanup() {
+	defer close(s.cleanupDone)
+	
+	ticker := time.NewTicker(SessionCleanupInterval)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-s.cleanupCtx.Done():
+			return
+		case <-ticker.C:
+			s.cleanupExpiredSessions()
+		}
+	}
+}
+
+// cleanupExpiredSessions removes expired sessions
+func (s *StreamableHTTPServer) cleanupExpiredSessions() {
+	var expiredSessions []string
+	var totalSessions, expiringSoon int
+	
+	// Find expired sessions and collect health info
+	s.server.sessions.Range(func(key, value any) bool {
+		sessionID, ok := key.(string)
+		if !ok {
+			return true
+		}
+		
+		totalSessions++
+		
+		if sessionWithExp, ok := value.(SessionWithExpiration); ok {
+			if sessionWithExp.IsExpired() {
+				expiredSessions = append(expiredSessions, sessionID)
+			} else {
+				// Check if session expires within 30 minutes
+				if time.Until(sessionWithExp.GetExpiresAt()) < 30*time.Minute {
+					expiringSoon++
+				}
+			}
+		}
+		return true
+	})
+	
+	// Remove expired sessions
+	for _, sessionID := range expiredSessions {
+		s.logger.Infof("Cleaning up expired session: %s", sessionID)
+		s.server.UnregisterSession(context.Background(), sessionID)
+	}
+	
+	// Log session health status
+	activeSessions := totalSessions - len(expiredSessions)
+	if len(expiredSessions) > 0 || expiringSoon > 0 {
+		s.logger.Infof("Session health: %d active, %d expired (cleaned), %d expiring soon", 
+			activeSessions, len(expiredSessions), expiringSoon)
+	}
+}
+
+// GetSessionHealth returns current session health statistics
+func (s *StreamableHTTPServer) GetSessionHealth() (total, active, expiringSoon, expired int) {
+	s.server.sessions.Range(func(key, value any) bool {
+		_, ok := key.(string)
+		if !ok {
+			return true
+		}
+		
+		total++
+		
+		if sessionWithExp, ok := value.(SessionWithExpiration); ok {
+			if sessionWithExp.IsExpired() {
+				expired++
+			} else {
+				active++
+				// Check if session expires within 30 minutes
+				if time.Until(sessionWithExp.GetExpiresAt()) < 30*time.Minute {
+					expiringSoon++
+				}
+			}
+		} else {
+			// Non-expiring sessions are considered active
+			active++
+		}
+		return true
+	})
+	
+	return total, active, expiringSoon, expired
+}
 
 // --- session id manager ---
 
@@ -731,7 +964,7 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 	
 	if compact {
 		// Return compact format with just name and description
-		compactTools := make([]map[string]interface{}, len(tools))
+		compactTools := make([]map[string]any, len(tools))
 		for i, tool := range tools {
 			// Sanitize description to ensure valid JSON
 			sanitizedDesc := strings.ReplaceAll(tool.Description, "\x00", "")
@@ -764,7 +997,7 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1e", "")
 			sanitizedDesc = strings.ReplaceAll(sanitizedDesc, "\x1f", "")
 			
-			compactTools[i] = map[string]interface{}{
+			compactTools[i] = map[string]any{
 				"name":        tool.Name,
 				"description": sanitizedDesc,
 			}
@@ -800,4 +1033,60 @@ func (s *StreamableHTTPServer) handleToolsAPI(w http.ResponseWriter, r *http.Req
 			fmt.Printf("Write error: %v\n", err)
 		}
 	}
+}
+
+// logIncomingRequest logs detailed information about incoming HTTP requests
+func (s *StreamableHTTPServer) logIncomingRequest(r *http.Request) {
+	timestamp := time.Now().Format("2006-01-02 15:04:05 MST")
+	
+	log.Printf("┌─ INCOMING MCP REQUEST ────────────────────────────────────────────────────────")
+	log.Printf("│ 🕐 %s", timestamp)
+	log.Printf("│ 🌐 %s %s", r.Method, r.URL.String())
+	log.Printf("│ 📍 Remote: %s", r.RemoteAddr)
+	
+	// Log all headers
+	if len(r.Header) > 0 {
+		log.Printf("│ 📋 Headers:")
+		for name, values := range r.Header {
+			// Show auth headers but mask sensitive values
+			if strings.Contains(strings.ToLower(name), "auth") || 
+			   strings.Contains(strings.ToLower(name), "key") ||
+			   strings.Contains(strings.ToLower(name), "token") {
+				log.Printf("│    %s: %s", name, maskSensitiveValue(strings.Join(values, ", ")))
+			} else {
+				log.Printf("│    %s: %s", name, strings.Join(values, ", "))
+			}
+		}
+	}
+	
+	// Log query parameters
+	if len(r.URL.RawQuery) > 0 {
+		log.Printf("│ 🔍 Query: %s", r.URL.RawQuery)
+	}
+	
+	// Log request body for POST requests (with size limit)
+	if r.Method == "POST" && r.ContentLength > 0 && r.ContentLength < 10240 { // Max 10KB
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err == nil {
+			// Restore body for actual processing
+			r.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
+			
+			bodyStr := string(bodyBytes)
+			if len(bodyStr) > 2000 {
+				bodyStr = bodyStr[:2000] + "... [truncated]"
+			}
+			log.Printf("│ 📦 Body: %s", bodyStr)
+		}
+	}
+	
+	log.Printf("└───────────────────────────────────────────────────────────────────────────────")
+}
+
+// maskSensitiveValue masks sensitive authentication values for logging
+func maskSensitiveValue(value string) string {
+	if len(value) <= 8 {
+		return strings.Repeat("*", len(value))
+	}
+	// Show first 4 and last 4 characters
+	return value[:4] + strings.Repeat("*", len(value)-8) + value[len(value)-4:]
 }

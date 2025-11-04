@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/ubermorgenland/openapi-mcp/pkg/mcp/mcp"
 )
@@ -46,6 +48,28 @@ type SessionWithClientInfo interface {
 	GetClientInfo() mcp.Implementation
 	// SetClientInfo sets the client information for this session
 	SetClientInfo(clientInfo mcp.Implementation)
+}
+
+// SessionWithAuthHeaders is an extension of ClientSession that can preserve HTTP authentication headers
+type SessionWithAuthHeaders interface {
+	ClientSession
+	// GetAuthHeaders returns the authentication headers for this session
+	GetAuthHeaders() http.Header
+	// SetAuthHeaders sets the authentication headers for this session
+	SetAuthHeaders(headers http.Header)
+}
+
+// SessionWithExpiration is an extension of ClientSession that supports session expiration
+type SessionWithExpiration interface {
+	ClientSession
+	// GetCreatedAt returns when the session was created
+	GetCreatedAt() time.Time
+	// GetExpiresAt returns when the session expires
+	GetExpiresAt() time.Time
+	// IsExpired returns true if the session has expired
+	IsExpired() bool
+	// Renew extends the session lifetime
+	Renew(duration time.Duration)
 }
 
 // clientSessionKey is the context key for storing current client notification channel.
@@ -92,6 +116,37 @@ func (s *MCPServer) UnregisterSession(
 	if session, ok := sessionValue.(ClientSession); ok {
 		s.hooks.UnregisterSession(ctx, session)
 	}
+}
+
+// TouchSession renews a session's expiration time when accessed
+func (s *MCPServer) TouchSession(sessionID string, renewalDuration time.Duration) error {
+	sessionValue, ok := s.sessions.Load(sessionID)
+	if !ok {
+		return ErrSessionNotFound
+	}
+	
+	if sessionWithExp, ok := sessionValue.(SessionWithExpiration); ok {
+		if sessionWithExp.IsExpired() {
+			return ErrExpiredSessionAuth
+		}
+		sessionWithExp.Renew(renewalDuration)
+	}
+	
+	return nil
+}
+
+// GetSessionInfo returns information about a session
+func (s *MCPServer) GetSessionInfo(sessionID string) (SessionWithExpiration, error) {
+	sessionValue, ok := s.sessions.Load(sessionID)
+	if !ok {
+		return nil, ErrSessionNotFound
+	}
+	
+	if sessionWithExp, ok := sessionValue.(SessionWithExpiration); ok {
+		return sessionWithExp, nil
+	}
+	
+	return nil, ErrSessionNotInitialized
 }
 
 // SendNotificationToAllClients sends a notification to all the currently active clients.

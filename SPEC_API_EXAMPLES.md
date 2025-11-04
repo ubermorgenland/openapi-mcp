@@ -66,7 +66,7 @@ curl -X GET http://localhost:8090/specs | jq '.'
       "endpoint_path": "/weather",
       "file_format": "json",
       "file_size": 65561,
-      "api_key_token": "sk-abc123...",
+      "api_key_token": "YOUR_API_KEY_HERE",
       "is_active": true,
       "created_at": "2024-08-27T10:30:00Z",
       "updated_at": "2024-08-27T10:30:00Z"
@@ -135,7 +135,7 @@ curl -X POST http://localhost:8090/specs \
     "name": "petstore-secured",
     "endpoint_path": "/petstore-secured",
     "file_format": "json",
-    "api_key_token": "pk-petstore-abc123xyz789",
+    "api_key_token": "YOUR_API_KEY_HERE",
     "active": true,
     "spec_content": "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Secured Pet Store API\",\"version\":\"1.0.0\"},\"paths\":{\"/pets\":{\"get\":{\"operationId\":\"listPets\",\"responses\":{\"200\":{\"description\":\"List of pets\"}}}}}}"
   }' | jq '.'
@@ -261,7 +261,7 @@ curl -X DELETE http://localhost:8090/specs/2 | jq '.'
 curl -X PUT http://localhost:8090/specs/1/token \
   -H "Content-Type: application/json" \
   -d '{
-    "api_key_token": "sk-new-api-key-123456789"
+    "api_key_token": "YOUR_NEW_API_KEY_HERE"
   }' | jq '.'
 ```
 
@@ -383,7 +383,7 @@ for spec_file in "$SPECS_DIR"/*.{json,yaml,yml}; do
         echo "Importing $filename..."
         
         # Optional: Add API key token from environment variable
-        # Example: export API_TOKEN_PREFIX="sk-mytoken-"
+        # Example: export API_TOKEN_PREFIX="YOUR_TOKEN_PREFIX_"
         api_token=""
         if [[ -n "$API_TOKEN_PREFIX" ]]; then
             api_token="\"api_key_token\": \"${API_TOKEN_PREFIX}${name}\","

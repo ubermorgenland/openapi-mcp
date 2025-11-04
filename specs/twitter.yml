@@ -8,6 +8,24 @@ info:
   version: 1.0.0
 servers:
   - url: https://twitter241.p.rapidapi.com
+security:
+  - RapidAPIKey: []
+components:
+  securitySchemes:
+    RapidAPIKey:
+      type: apiKey
+      in: header
+      name: X-RapidAPI-Key
+      description: Your RapidAPI key.
+  parameters:
+    RapidAPIHostHeader:
+      name: X-RapidAPI-Host
+      in: header
+      required: true
+      schema:
+        type: string
+        default: twitter241.p.rapidapi.com
+      description: The RapidAPI host for Twitter service.
 paths:
   /followers:
     get:
@@ -15,6 +33,7 @@ paths:
       description: Retrieve a list of users who follow a specified user.
       operationId: "followers"
       parameters:
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
         - name: user
           in: query
           description: The user ID (rest_id) of the target user whose followers you want to retrieve.
@@ -152,6 +171,7 @@ paths:
       description: Retrieve a list of users that a specified user is following.
       operationId: "followings"
       parameters:
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
         - name: user
           in: query
           description: The user ID (rest_id) of the target user whose followings you want to retrieve.
@@ -187,6 +207,7 @@ paths:
       description: Retrieve a list of users from a list of specified IDs.
       operationId: "get-users"
       parameters:
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
         - name: users
           in: query
           description: The user IDs of users you want to retrieve (separated with commas).
@@ -212,6 +233,7 @@ paths:
       description: Retrieve a user's profile by username.
       operationId: "user"
       parameters:
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
         - name: username
           in: query
           description: The username of the profile you want to retrieve.
@@ -389,6 +411,7 @@ paths:
       description: Perform a search (V2).
       operationId: "search-v2"
       parameters:
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
         - name: query
           in: query
           description: The search term or keyword you want to find.
@@ -8989,6 +9012,7 @@ paths:
       description: Retrieve all tweets from a profile.
       operationId: "user-tweets"
       parameters:
+        - $ref: '#/components/parameters/RapidAPIHostHeader'
         - name: user
           in: query
           description: The ID (rest_id) of the profile.
@@ -10438,12 +10462,3 @@ paths:
             metadata:
               scribeConfig:
                 page: profileBest
-components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      name: x-rapidapi-key
-      in: header
-security:
-  - ApiKeyAuth: []
-x-onboarding_stage: completed
