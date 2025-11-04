@@ -18,6 +18,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Resp1'
       parameters:
+        - $ref: '#/components/parameters/XRapidapiHost'
         - in: query
           name: hl
           schema:
@@ -44,6 +45,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Resp2'
       parameters:
+        - $ref: '#/components/parameters/XRapidapiHost'
         - in: query
           name: t
           schema:
@@ -77,6 +79,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Resp3'
       parameters:
+        - $ref: '#/components/parameters/XRapidapiHost'
         - in: query
           name: t
           schema:
@@ -97,7 +100,16 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: x-rapidapi-key
+      name: X-RapidAPI-Key
+  parameters:
+    XRapidapiHost:
+      name: X-RapidAPI-Host
+      in: header
+      required: true
+      schema:
+        type: string
+        default: google-finance8.p.rapidapi.com
+        example: google-finance8.p.rapidapi.com
   schemas:
     Resp1:
       type: array

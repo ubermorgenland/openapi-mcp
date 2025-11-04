@@ -11,15 +11,16 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: x-rapidapi-key
+      name: X-RapidAPI-Key
   parameters:
     XRapidapiHost:
-      name: x-rapidapi-host
+      name: X-RapidAPI-Host
       in: header
       required: true
       schema:
         type: string
-      example: google-keyword-insight1.p.rapidapi.com
+        default: google-keyword-insight1.p.rapidapi.com
+        example: google-keyword-insight1.p.rapidapi.com
   schemas:
     GenericResponse:
       type: object

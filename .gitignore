@@ -25,7 +25,10 @@ tmp/
 # Environment and config files
 .env
 .env.*
+!.env.example
+!.env.test.example
 *.env
+test_authentication/.env.test
 config.json
 config.yaml
 config.yml
@@ -67,3 +70,4 @@ RELEASE.md
 
 
 openapimcp
+scripts/

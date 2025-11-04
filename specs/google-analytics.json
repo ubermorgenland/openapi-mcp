@@ -1,0 +1,694 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Google Analytics 4 Data API",
+    "description": "Google Analytics Data API for running reports and getting analytics data",
+    "version": "v1beta",
+    "contact": {
+      "name": "Google Analytics API",
+      "url": "https://developers.google.com/analytics"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://analyticsdata.googleapis.com",
+      "description": "Google Analytics Data API server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1beta/properties/{propertyId}/metadata": {
+      "get": {
+        "tags": ["Data API"],
+        "summary": "Get Metadata",
+        "description": "Returns metadata for dimensions and metrics available in reporting methods.",
+        "operationId": "getMetadata",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "in": "path",
+            "required": true,
+            "description": "A Google Analytics property identifier. Example: 507444446",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/v1beta/properties/{propertyId}:runReport": {
+      "post": {
+        "tags": ["Data API"],
+        "summary": "Run Analytics Report",
+        "description": "Returns a customized report of your Google Analytics event data. Reports contain statistics derived from data collected by the Google Analytics tracking code.",
+        "operationId": "runReport",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "in": "path",
+            "required": true,
+            "description": "A Google Analytics property identifier whose events are tracked. Example: 507444446",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/v1beta/properties/{propertyId}:runRealtimeReport": {
+      "post": {
+        "tags": ["Data API"],
+        "summary": "Run Realtime Report",
+        "description": "Returns a customized report of realtime event data for your property.",
+        "operationId": "runRealtimeReport",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "in": "path",
+            "required": true,
+            "description": "A Google Analytics property identifier whose events are tracked. Example: 507444446",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRealtimeReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunRealtimeReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.0 Bearer Token authentication. Use your access token in the Authorization header."
+      }
+    },
+    "schemas": {
+      "RunReportRequest": {
+        "type": "object",
+        "properties": {
+          "dateRanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateRange"
+            },
+            "description": "Date ranges of data to read. If multiple date ranges are requested, each response row will contain a zero based date range index."
+          },
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Dimension"
+            },
+            "description": "The dimensions requested and displayed."
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            },
+            "description": "The metrics requested and displayed."
+          },
+          "dimensionFilter": {
+            "$ref": "#/components/schemas/FilterExpression",
+            "description": "Dimension filters let you restrict report response to specific dimension values."
+          },
+          "metricFilter": {
+            "$ref": "#/components/schemas/FilterExpression",
+            "description": "Metric filters let you restrict report response to specific metric values."
+          },
+          "offset": {
+            "type": "string",
+            "format": "int64",
+            "description": "The row count of the start row. The first row is counted as row 0."
+          },
+          "limit": {
+            "type": "string",
+            "format": "int64",
+            "description": "The number of rows to return. If unspecified, 10,000 rows are returned."
+          },
+          "metricAggregations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["TOTAL", "MINIMUM", "MAXIMUM", "COUNT"]
+            },
+            "description": "Aggregation of metrics. Aggregated metric values will be shown in rows where the dimension_values are set to \"RESERVED_(MetricAggregation)\"."
+          }
+        }
+      },
+      "RunReportResponse": {
+        "type": "object",
+        "properties": {
+          "dimensionHeaders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DimensionHeader"
+            },
+            "description": "Describes dimension columns. The number of DimensionHeaders and ordering of DimensionHeaders matches the dimensions present in rows."
+          },
+          "metricHeaders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricHeader"
+            },
+            "description": "Describes metric columns. The number of MetricHeaders and ordering of MetricHeaders matches the metrics present in rows."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Row"
+            },
+            "description": "Rows of dimension value combinations and metric values in the report."
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Row"
+            },
+            "description": "If requested, the totalized values of metrics."
+          },
+          "rowCount": {
+            "type": "integer",
+            "description": "The total number of rows in the query result."
+          }
+        }
+      },
+      "RunRealtimeReportRequest": {
+        "type": "object",
+        "properties": {
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Dimension"
+            },
+            "description": "The dimensions requested and displayed."
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            },
+            "description": "The metrics requested and displayed."
+          },
+          "dimensionFilter": {
+            "$ref": "#/components/schemas/FilterExpression",
+            "description": "Dimension filters let you restrict report response to specific dimension values."
+          },
+          "metricFilter": {
+            "$ref": "#/components/schemas/FilterExpression",
+            "description": "Metric filters let you restrict report response to specific metric values."
+          },
+          "limit": {
+            "type": "string",
+            "format": "int64",
+            "description": "The number of rows to return. If unspecified, 10,000 rows are returned."
+          }
+        }
+      },
+      "RunRealtimeReportResponse": {
+        "type": "object",
+        "properties": {
+          "dimensionHeaders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DimensionHeader"
+            }
+          },
+          "metricHeaders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricHeader"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Row"
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Row"
+            }
+          },
+          "rowCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "DateRange": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "The inclusive start date for the query in the format YYYY-MM-DD. Cannot be after endDate. Examples: '2023-01-01', '7daysAgo', 'yesterday'"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "The inclusive end date for the query in the format YYYY-MM-DD. Cannot be before startDate. Examples: '2023-01-31', 'today', 'yesterday'"
+          },
+          "name": {
+            "type": "string",
+            "description": "Assigns a name to this date range. The dimension dateRange is valued to this name in a report response."
+          }
+        }
+      },
+      "Dimension": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the dimension. Common dimensions: country, city, browser, deviceCategory, eventName, etc."
+          },
+          "dimensionExpression": {
+            "$ref": "#/components/schemas/DimensionExpression",
+            "description": "One dimension can be the result of an expression of multiple dimensions."
+          }
+        }
+      },
+      "Metric": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the metric. Common metrics: activeUsers, sessions, screenPageViews, eventCount, etc."
+          },
+          "expression": {
+            "type": "string",
+            "description": "A mathematical expression for derived metrics."
+          },
+          "invisible": {
+            "type": "boolean",
+            "description": "Indicates if a metric is invisible in the report response."
+          }
+        }
+      },
+      "FilterExpression": {
+        "type": "object",
+        "properties": {
+          "andGroup": {
+            "$ref": "#/components/schemas/FilterExpressionList",
+            "description": "The FilterExpressions in andGroup have an AND relationship."
+          },
+          "orGroup": {
+            "$ref": "#/components/schemas/FilterExpressionList",
+            "description": "The FilterExpressions in orGroup have an OR relationship."
+          },
+          "notExpression": {
+            "$ref": "#/components/schemas/FilterExpression",
+            "description": "The FilterExpression is NOT of notExpression."
+          },
+          "filter": {
+            "$ref": "#/components/schemas/Filter",
+            "description": "A primitive filter."
+          }
+        }
+      },
+      "FilterExpressionList": {
+        "type": "object",
+        "properties": {
+          "expressions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterExpression"
+            }
+          }
+        }
+      },
+      "Filter": {
+        "type": "object",
+        "properties": {
+          "fieldName": {
+            "type": "string",
+            "description": "The dimension name or metric name."
+          },
+          "stringFilter": {
+            "$ref": "#/components/schemas/StringFilter",
+            "description": "Strings related filter."
+          },
+          "inListFilter": {
+            "$ref": "#/components/schemas/InListFilter",
+            "description": "A filter for in list values."
+          },
+          "numericFilter": {
+            "$ref": "#/components/schemas/NumericFilter",
+            "description": "A filter for numeric or date values."
+          },
+          "betweenFilter": {
+            "$ref": "#/components/schemas/BetweenFilter",
+            "description": "A filter for two values."
+          }
+        }
+      },
+      "StringFilter": {
+        "type": "object",
+        "properties": {
+          "matchType": {
+            "type": "string",
+            "enum": ["EXACT", "BEGINS_WITH", "ENDS_WITH", "CONTAINS", "FULL_REGEXP", "PARTIAL_REGEXP"],
+            "description": "The match type for this filter."
+          },
+          "value": {
+            "type": "string",
+            "description": "The string value used for the matching."
+          },
+          "caseSensitive": {
+            "type": "boolean",
+            "description": "If true, the string value is case sensitive."
+          }
+        }
+      },
+      "InListFilter": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The list of string values."
+          },
+          "caseSensitive": {
+            "type": "boolean",
+            "description": "If true, the string value is case sensitive."
+          }
+        }
+      },
+      "NumericFilter": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "GREATER_THAN", "GREATER_THAN_OR_EQUAL"],
+            "description": "The operation type for this filter."
+          },
+          "value": {
+            "$ref": "#/components/schemas/NumericValue",
+            "description": "A numeric value or a date value."
+          }
+        }
+      },
+      "BetweenFilter": {
+        "type": "object",
+        "properties": {
+          "fromValue": {
+            "$ref": "#/components/schemas/NumericValue",
+            "description": "Begins with this number."
+          },
+          "toValue": {
+            "$ref": "#/components/schemas/NumericValue",
+            "description": "Ends with this number."
+          }
+        }
+      },
+      "NumericValue": {
+        "type": "object",
+        "properties": {
+          "int64Value": {
+            "type": "string",
+            "format": "int64",
+            "description": "Integer value"
+          },
+          "doubleValue": {
+            "type": "number",
+            "format": "double",
+            "description": "Double value"
+          }
+        }
+      },
+      "DimensionExpression": {
+        "type": "object",
+        "properties": {
+          "lowerCase": {
+            "$ref": "#/components/schemas/CaseExpression",
+            "description": "Used to convert a dimension value to lower case."
+          },
+          "upperCase": {
+            "$ref": "#/components/schemas/CaseExpression",
+            "description": "Used to convert a dimension value to upper case."
+          },
+          "concatenate": {
+            "$ref": "#/components/schemas/ConcatenateExpression",
+            "description": "Used to combine dimension values to a single dimension."
+          }
+        }
+      },
+      "CaseExpression": {
+        "type": "object",
+        "properties": {
+          "dimensionName": {
+            "type": "string",
+            "description": "Name of a dimension. The name must refer back to a name in dimensions field of the request."
+          }
+        }
+      },
+      "ConcatenateExpression": {
+        "type": "object",
+        "properties": {
+          "dimensionNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of dimensions. The names must refer back to names in the dimensions field of the request."
+          },
+          "delimiter": {
+            "type": "string",
+            "description": "The delimiter placed between dimension names."
+          }
+        }
+      },
+      "DimensionHeader": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The dimension's name."
+          }
+        }
+      },
+      "MetricHeader": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The metric's name."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["METRIC_TYPE_UNSPECIFIED", "TYPE_INTEGER", "TYPE_FLOAT", "TYPE_SECONDS", "TYPE_MILLISECONDS", "TYPE_MINUTES", "TYPE_HOURS", "TYPE_STANDARD", "TYPE_CURRENCY", "TYPE_FEET", "TYPE_METERS", "TYPE_KILOMETERS", "TYPE_MILES"],
+            "description": "The metric's data type."
+          }
+        }
+      },
+      "Row": {
+        "type": "object",
+        "properties": {
+          "dimensionValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DimensionValue"
+            },
+            "description": "List of requested dimension values. In a PivotReport, dimension_values are only listed for dimensions included in a pivot."
+          },
+          "metricValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricValue"
+            },
+            "description": "List of requested visible metric values."
+          }
+        }
+      },
+      "DimensionValue": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Value as a string if the dimension type is a string."
+          }
+        }
+      },
+      "MetricValue": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Measurement value. See MetricHeader for type."
+          }
+        }
+      },
+      "Metadata": {
+        "type": "object",
+        "properties": {
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DimensionMetadata"
+            },
+            "description": "Resource name of this metadata."
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricMetadata"
+            },
+            "description": "The metric descriptions."
+          }
+        }
+      },
+      "DimensionMetadata": {
+        "type": "object",
+        "properties": {
+          "apiName": {
+            "type": "string",
+            "description": "This dimension's name. Useable in Dimension's name field."
+          },
+          "uiName": {
+            "type": "string",
+            "description": "This dimension's name within the Google Analytics user interface."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of how this dimension is used and calculated."
+          },
+          "deprecatedApiNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Still usable but deprecated names for this dimension."
+          }
+        }
+      },
+      "MetricMetadata": {
+        "type": "object",
+        "properties": {
+          "apiName": {
+            "type": "string",
+            "description": "A metric name. Useable in Metric's name field."
+          },
+          "uiName": {
+            "type": "string",
+            "description": "This metric's name within the Google Analytics user interface."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of how this metric is used and calculated."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["METRIC_TYPE_UNSPECIFIED", "TYPE_INTEGER", "TYPE_FLOAT", "TYPE_SECONDS", "TYPE_MILLISECONDS", "TYPE_MINUTES", "TYPE_HOURS", "TYPE_STANDARD", "TYPE_CURRENCY", "TYPE_FEET", "TYPE_METERS", "TYPE_KILOMETERS", "TYPE_MILES"],
+            "description": "The type of this metric."
+          },
+          "expression": {
+            "type": "string",
+            "description": "The mathematical expression for this derived metric."
+          },
+          "customDefinition": {
+            "type": "boolean",
+            "description": "True if the metric is a custom metric for this property."
+          },
+          "deprecatedApiNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Still usable but deprecated names for this metric."
+          }
+        }
+      }
+    }
+  }
+}
