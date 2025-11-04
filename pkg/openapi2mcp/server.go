@@ -11,99 +11,21 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	mcpserver "github.com/ubermorgenland/openapi-mcp/pkg/mcp/server"
+	"github.com/ubermorgenland/openapi-mcp/pkg/models"
 )
 
-// authContextFunc extracts authentication from environment variables first, then falls back to HTTP headers.
-// This ensures environment variables take priority over per-request authentication.
-// Priority order: Environment Variables > HTTP Headers
+// DEPRECATED: This function is deprecated and should not be used.
+// Use the secure context-based authentication system instead.
+// This function has been kept for backward compatibility only.
+// 
+// secureAuthContextFunc in main.go provides secure, context-based authentication
+// without global state mutation that eliminates race conditions and token leakage.
 func authContextFunc(ctx context.Context, r *http.Request) context.Context {
-	// Save original environment values to restore them later
-	origAPIKey := os.Getenv("API_KEY")
-	origBearerToken := os.Getenv("BEARER_TOKEN")
-	origBasicAuth := os.Getenv("BASIC_AUTH")
-
-	// Phase 1: Environment variables are already set and take priority
-	// No need to override if they exist - they're the primary source
-
-	// Phase 2: Extract authentication from HTTP headers ONLY as fallback
-	// Only set from headers if environment variables are not already set
-
-	// API Key fallback: Try common API key header patterns
-	if os.Getenv("API_KEY") == "" {
-		if apiKey := r.Header.Get("X-API-Key"); apiKey != "" {
-			os.Setenv("API_KEY", apiKey)
-		} else if apiKey := r.Header.Get("Api-Key"); apiKey != "" {
-			os.Setenv("API_KEY", apiKey)
-		} else if apiKey := r.Header.Get("x-rapidapi-key"); apiKey != "" {
-			// Handle RapidAPI specific header
-			os.Setenv("API_KEY", apiKey)
-		}
-	}
-
-	// Bearer Token fallback: Extract from Authorization header
-	if os.Getenv("BEARER_TOKEN") == "" {
-		if authHeader := r.Header.Get("Authorization"); authHeader != "" {
-			if len(authHeader) > 7 && strings.HasPrefix(authHeader, "Bearer ") {
-				os.Setenv("BEARER_TOKEN", authHeader[7:])
-			}
-		}
-	}
-
-	// Basic Auth fallback: Extract from Authorization header
-	if os.Getenv("BASIC_AUTH") == "" {
-		if authHeader := r.Header.Get("Authorization"); authHeader != "" {
-			if len(authHeader) > 6 && strings.HasPrefix(authHeader, "Basic ") {
-				os.Setenv("BASIC_AUTH", authHeader[6:])
-			}
-		}
-	}
-
-	// Create a context that restores the original environment when done
-	return &authContext{
-		Context:         ctx,
-		origAPIKey:      origAPIKey,
-		origBearerToken: origBearerToken,
-		origBasicAuth:   origBasicAuth,
-	}
-}
-
-// authContext wraps a context and restores original environment variables when done
-type authContext struct {
-	context.Context
-	origAPIKey      string
-	origBearerToken string
-	origBasicAuth   string
-}
-
-// Done restores the original environment variables when the context is done
-func (c *authContext) Done() <-chan struct{} {
-	done := c.Context.Done()
-	if done != nil {
-		go func() {
-			<-done
-			c.restoreEnv()
-		}()
-	}
-	return done
-}
-
-func (c *authContext) restoreEnv() {
-	// Restore original environment variables
-	if c.origAPIKey != "" {
-		os.Setenv("API_KEY", c.origAPIKey)
-	} else {
-		os.Unsetenv("API_KEY")
-	}
-	if c.origBearerToken != "" {
-		os.Setenv("BEARER_TOKEN", c.origBearerToken)
-	} else {
-		os.Unsetenv("BEARER_TOKEN")
-	}
-	if c.origBasicAuth != "" {
-		os.Setenv("BASIC_AUTH", c.origBasicAuth)
-	} else {
-		os.Unsetenv("BASIC_AUTH")
-	}
+	// WARNING: This legacy authentication method uses dangerous global state mutation
+	// and is vulnerable to race conditions. It should not be used in production.
+	// 
+	// For secure authentication, use the context-based system in main.go instead.
+	return ctx
 }
 
 // NewServer creates a new MCP server, registers all OpenAPI tools, and returns the server.
@@ -121,7 +43,7 @@ func NewServer(name, version string, doc *openapi3.T) *mcpserver.MCPServer {
 	// Force initial GC before processing large operations
 	runtime.GC()
 	
-	RegisterOpenAPITools(srv, ops, doc, nil)
+	RegisterOpenAPITools(srv, ops, doc, nil, nil)
 	
 	// Final cleanup
 	runtime.GC()
@@ -138,7 +60,27 @@ func NewServer(name, version string, doc *openapi3.T) *mcpserver.MCPServer {
 //	openapi2mcp.ServeHTTP(srv, ":8080")
 func NewServerWithOps(name, version string, doc *openapi3.T, ops []OpenAPIOperation) *mcpserver.MCPServer {
 	srv := mcpserver.NewMCPServer(name, version)
-	RegisterOpenAPITools(srv, ops, doc, nil)
+	RegisterOpenAPITools(srv, ops, doc, nil, nil)
+	return srv
+}
+
+// NewServerWithDatabase creates a new MCP server with database spec support for authentication.
+// Example usage:
+//
+//	srv := openapi2mcp.NewServerWithDatabase("weather", doc.Info.Version, doc, dbSpec)
+func NewServerWithDatabase(name, version string, doc *openapi3.T, dbSpec *models.OpenAPISpec) *mcpserver.MCPServer {
+	ops := ExtractOpenAPIOperations(doc)
+	srv := mcpserver.NewMCPServer(name, version)
+	fmt.Fprintf(os.Stderr, "[INFO] Registering %d operations for %s with database auth (memory optimized)\n", len(ops), name)
+	
+	// Force initial GC before processing large operations
+	runtime.GC()
+	
+	RegisterOpenAPITools(srv, ops, doc, nil, dbSpec)
+	
+	// Final cleanup
+	runtime.GC()
+	fmt.Fprintf(os.Stderr, "[INFO] Database-aware server creation complete for %s\n", name)
 	return srv
 }
 

@@ -29,6 +29,58 @@ func escapeParameterName(name string) string {
 	return escaped
 }
 
+// isAuthenticationHeader determines if a parameter is an authentication-related header
+// that should be automatically injected by the authentication system and excluded from required validation
+func isAuthenticationHeader(param *openapi3.Parameter, doc *openapi3.T) bool {
+	// Only check header parameters
+	if param.In != "header" {
+		return false
+	}
+	
+	// Check if this header matches any authentication scheme in the spec
+	if doc != nil && doc.Components != nil && doc.Components.SecuritySchemes != nil {
+		for _, schemeRef := range doc.Components.SecuritySchemes {
+			if schemeRef.Value != nil {
+				switch schemeRef.Value.Type {
+				case "apiKey":
+					// If this is an API key header, it's handled by authentication system
+					if schemeRef.Value.In == "header" && schemeRef.Value.Name == param.Name {
+						return true
+					}
+				case "http":
+					// HTTP auth schemes (Bearer, Basic) use Authorization header
+					if param.Name == "Authorization" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	
+	// Check for common host headers that are automatically injected
+	paramName := strings.ToLower(param.Name)
+	if strings.Contains(paramName, "host") {
+		return true
+	}
+	
+	// Common authentication headers
+	commonAuthHeaders := []string{
+		"authorization",
+		"x-api-key",
+		"api-key",
+		"x-rapidapi-key",
+		"x-rapidapi-host",
+	}
+	
+	for _, authHeader := range commonAuthHeaders {
+		if paramName == authHeader {
+			return true
+		}
+	}
+	
+	return false
+}
+
 // isMessageArrayPattern checks if the oneOf schema represents a common message array pattern
 // used in chat APIs where messages can be system, user, or assistant messages
 func isMessageArrayPattern(oneOf []*openapi3.SchemaRef) bool {
@@ -375,7 +427,7 @@ func BuildInputSchemaWithContext(params openapi3.Parameters, requestBody *openap
 			// Use escaped parameter name for MCP schema compatibility
 			escapedName := escapeParameterName(p.Name)
 			properties[escapedName] = prop
-			if p.Required {
+			if p.Required && !isAuthenticationHeader(p, doc) {
 				required = append(required, escapedName)
 			}
 		}

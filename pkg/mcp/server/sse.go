@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -336,6 +337,9 @@ func (s *SSEServer) Shutdown(ctx context.Context) error {
 // handleSSE handles incoming SSE connection requests.
 // It sets up appropriate headers and creates a new session for the client.
 func (s *SSEServer) handleSSE(w http.ResponseWriter, r *http.Request) {
+	// Always log incoming requests for debugging (same as StreamableHTTP)
+	s.logIncomingRequest(r)
+	
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -471,6 +475,9 @@ func (s *SSEServer) GetMessageEndpointForClient(r *http.Request, sessionID strin
 // handleMessage processes incoming JSON-RPC messages from clients and sends responses
 // back through the SSE connection and 202 code to HTTP response.
 func (s *SSEServer) handleMessage(w http.ResponseWriter, r *http.Request) {
+	// Always log incoming requests for debugging (same as StreamableHTTP)
+	s.logIncomingRequest(r)
+	
 	if r.Method != http.MethodPost {
 		s.writeJSONRPCError(w, nil, mcp.INVALID_REQUEST, "Method not allowed")
 		return
@@ -739,3 +746,52 @@ func normalizeURLPath(elem ...string) string {
 
 	return joined
 }
+
+// logIncomingRequest logs detailed information about incoming HTTP requests
+// Same implementation as StreamableHTTP to ensure consistent logging across both endpoints
+func (s *SSEServer) logIncomingRequest(r *http.Request) {
+	timestamp := time.Now().Format("2006-01-02 15:04:05 MST")
+	
+	log.Printf("┌─ INCOMING SSE REQUEST ─────────────────────────────────────────────────────────")
+	log.Printf("│ 🕐 %s", timestamp)
+	log.Printf("│ 🌐 %s %s", r.Method, r.URL.String())
+	log.Printf("│ 📍 Remote: %s", r.RemoteAddr)
+	
+	// Log all headers
+	if len(r.Header) > 0 {
+		log.Printf("│ 📋 Headers:")
+		for name, values := range r.Header {
+			// Show auth headers but mask sensitive values
+			if strings.Contains(strings.ToLower(name), "auth") || 
+			   strings.Contains(strings.ToLower(name), "key") ||
+			   strings.Contains(strings.ToLower(name), "token") {
+				log.Printf("│    %s: %s", name, maskSensitiveValue(strings.Join(values, ", ")))
+			} else {
+				log.Printf("│    %s: %s", name, strings.Join(values, ", "))
+			}
+		}
+	}
+	
+	// Log query parameters
+	if len(r.URL.RawQuery) > 0 {
+		log.Printf("│ 🔍 Query: %s", r.URL.RawQuery)
+	}
+	
+	// Log request body for POST requests (with size limit)
+	if r.Method == "POST" && r.ContentLength > 0 && r.ContentLength < 10240 { // Max 10KB
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err == nil {
+			// Restore body for actual processing
+			r.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
+			
+			bodyStr := string(bodyBytes)
+			if len(bodyStr) > 2000 {
+				bodyStr = bodyStr[:2000] + "... [truncated]"
+			}
+			log.Printf("│ 📦 Body: %s", bodyStr)
+		}
+	}
+	
+	log.Printf("└───────────────────────────────────────────────────────────────────────────────")
+}
+
